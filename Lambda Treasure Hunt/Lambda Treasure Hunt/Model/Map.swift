@@ -254,4 +254,40 @@ class Map {
             NSLog("Error saving map: \(error)")
         }
     }
+    
+    // Breadth-First Search - get shortest path to target room
+    func path(from originRoomID: Int, to targetRoomID: Int) -> [Int]? {
+        var queue = [[Int]]()
+        var visited = Set<Int>()
+        
+        queue.append([originRoomID])
+        
+        while queue.count > 0 {
+            let path = queue.removeFirst()  // the [Int] is saved in path
+            let roomID = path.last!    // Get last room in the [Int] path, it is to forcibly unwrap becase we are never adding an empty array to the queue
+            
+            if !visited.contains(roomID) {    // visited doesn't contain node
+                visited.insert(roomID)
+                
+                if roomID == targetRoomID {
+                    return path
+                }
+                
+                guard let room = self.rooms[roomID] else {
+                    continue    // for the while loop, we don't know what this room is, so continue to the next path in the queue
+                }
+                
+                for nextRoomID in room.exits.values {
+                    guard let nextRoomID = nextRoomID else {
+                        continue    // skip over any explored exits
+                    }
+                    
+                    var newPath = path
+                    newPath.append(nextRoomID)
+                    queue.append(newPath)
+                }
+            }
+        }
+        return nil
+    }
 }

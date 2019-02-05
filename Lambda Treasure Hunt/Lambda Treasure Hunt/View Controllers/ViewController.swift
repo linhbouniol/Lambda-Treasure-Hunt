@@ -54,29 +54,38 @@ class ViewController: UIViewController {
             updateCooldown(cooldown: cooldownDate.timeIntervalSinceNow)
         }
         
+        // Call breadth first search to get path to target room so we can change our name
+        NSLog("\(map.path(from: 171, to: 467))")
+        
+        // map, call move, it will save the moves in a file
+        // slowly build up a graph of all rooms every time move() is called
+        // autoTraversal - find the path to discover all rooms
+        // as we traverse, the move() in there map will remember the moves
+        // even after the traversal it only print the path, but since we had to traverse each each, it adds the room to map, consesquencely the map gets the entire graph
+        // traversal isnt using the map at all, but since its moving its contributing to the map
         
         
         // Uncomment to find path to discover all rooms
-        if cooldownTimer != nil {
-            NSLog("Too fast! Please run again when the cooldown finishes!")
-            return
-        }
-        
-        // Get the starting room
-        map.status { (room, cooldown, error) in
-            if let error = error {
-                NSLog("Error getting status: \(error). Build and run to try again.")
-                return
-            }
-            
-            guard let cooldown = cooldown else {
-                NSLog("The cooldown is not available!")
-                return
-            }
-            
-            self.updateCooldown(cooldown: cooldown)
-            self.perform(#selector(self.startAutoTraversal), with: nil, afterDelay: cooldown)
-        }
+//        if cooldownTimer != nil {
+//            NSLog("Too fast! Please run again when the cooldown finishes!")
+//            return
+//        }
+//
+//        // Get the starting room
+//        map.status { (room, cooldown, error) in
+//            if let error = error {
+//                NSLog("Error getting status: \(error). Build and run to try again.")
+//                return
+//            }
+//
+//            guard let cooldown = cooldown else {
+//                NSLog("The cooldown is not available!")
+//                return
+//            }
+//
+//            self.updateCooldown(cooldown: cooldown)
+//            self.perform(#selector(self.startAutoTraversal), with: nil, afterDelay: cooldown)
+//        }
     }
     
     @IBOutlet weak var cooldownLabel: UILabel!
