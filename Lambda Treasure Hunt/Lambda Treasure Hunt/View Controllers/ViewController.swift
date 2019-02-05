@@ -21,6 +21,8 @@ class ViewController: UIViewController {
     func updateCooldown(cooldown: TimeInterval) {
         cooldownDate = Date(timeIntervalSinceNow: cooldown)
         
+        UserDefaults.standard.set(cooldownDate, forKey: "CooldownDate")
+        
         cooldownTimer?.invalidate()
         
         // If there is no cooldown, remove the timer
@@ -47,7 +49,34 @@ class ViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
+        
+        if let cooldownDate = UserDefaults.standard.object(forKey: "CooldownDate") as? Date {
+            updateCooldown(cooldown: cooldownDate.timeIntervalSinceNow)
+        }
+        
+        
+        
+        // Uncomment to find path to discover all rooms
+        if cooldownTimer != nil {
+            NSLog("Too fast! Please run again when the cooldown finishes!")
+            return
+        }
+        
+        // Get the starting room
+        map.status { (room, cooldown, error) in
+            if let error = error {
+                NSLog("Error getting status: \(error). Build and run to try again.")
+                return
+            }
+            
+            guard let cooldown = cooldown else {
+                NSLog("The cooldown is not available!")
+                return
+            }
+            
+            self.updateCooldown(cooldown: cooldown)
+            self.perform(#selector(self.startAutoTraversal), with: nil, afterDelay: cooldown)
+        }
     }
     
     @IBOutlet weak var cooldownLabel: UILabel!
@@ -113,6 +142,175 @@ class ViewController: UIViewController {
         map.status { (room, cooldown, error) in
             if let cooldown = cooldown {
                 self.updateCooldown(cooldown: cooldown)
+            }
+        }
+    }
+    
+    // MARK: - Discover Shortest Path
+    
+    var traversalPath: [Direction] = []
+    var traversalGraph: [Int : Room] = [:]
+    var backtrackingStack: [Direction] = []
+    var finishedBuildingTraversalPath: Bool = false
+    
+    @objc func startAutoTraversal() {
+        traversalPath = []
+        traversalGraph = [:]
+        backtrackingStack = []
+        
+        // Note that for path traversal, we are mostly ignoring the graph that the map object has, since that is mostly used for determining the "wise" path and other functions. This algorithm is specifically for finding the path that links all rooms, so having a graph without known exits will be useful to determine which rooms have not yet been explored.
+        
+        // Build up the first room
+        guard let startingRoom = map.currentRoom else {
+            NSLog("Error getting starting room!")
+            return
+        }
+        
+        // Build up the first room
+        let startingRoomID = startingRoom.roomID
+        
+        NSLog("Starting from room \(startingRoomID)")
+        
+        // Create an empty exits dictionary for the staring room to get us started
+        var exits: [Direction : Int?] = [:]
+        for direction in startingRoom.exits.keys {
+            exits[direction] = nil as Int?
+        }
+        
+        // Add the starting room to our graph
+        traversalGraph[startingRoomID] = Room(roomID: startingRoomID, exits: exits)
+        
+        
+//        let testPath = [.north, .south, .north, .east, .west, .south]
+//        let transformation = "[\(testPath.map { "'\($0.rawValue)'" }.joined(separator: ", "))]"
+//        print(transformation)
+        
+        autoTraversal()
+    }
+    
+    @objc func autoTraversal() {
+        guard traversalGraph.count < 500 && !finishedBuildingTraversalPath else {
+            // We traversed the whole graph at this point, so we are done!
+            
+            // Print the traversal path
+            let pythonFriendlyTraversalPath = "[\(traversalPath.map { "'\($0.rawValue)'" }.joined(separator: ", "))]"
+            NSLog("The traversal path is:\n\(pythonFriendlyTraversalPath)")
+            
+            return
+        }
+        
+        guard let currentRoomID = map.currentRoom?.roomID else {
+            NSLog("Current room is missing from the map. This shouldn't happen!")
+            return
+        }
+        
+        guard let currentRoom = traversalGraph[currentRoomID] else {
+            NSLog("The current room was missing from our graph! This shouldn't happen!")
+            return
+        }
+        
+        var areExitsAvailableToExplore = false
+        
+        for (direction, exitRoomID) in currentRoom.exits {
+            guard exitRoomID == nil else { // We are only interested in rooms that have not yet been explored
+                continue
+            }
+            
+            // This direction has not been explored yet, so let's check it out
+            
+            map.move(direction: direction) { (newRoomFromMap, cooldown, error) in
+                if let error = error {
+                    NSLog("Error moving to new room! \(error)")
+                    
+                    let cooldown = cooldown ?? 30
+                    
+                    self.updateCooldown(cooldown: cooldown)
+                    self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
+                    
+                    return
+                }
+                
+                guard let cooldown = cooldown else {
+                    NSLog("The cooldown is missing! Something is wrong...")
+                    return
+                }
+                
+                guard let nextRoomFromMap = newRoomFromMap else {
+                    NSLog("New room should not be missing!!")
+                    return
+                }
+                
+                let nextRoomID = nextRoomFromMap.roomID
+                
+                NSLog("Moved \(direction) to room \(nextRoomID)")
+                currentRoom.exits[direction] = nextRoomID
+                
+                let returningDirection = direction.opposite
+                
+                // Create the next room if we need to, or just access it if it's already in our graph
+                var nextRoom: Room! = self.traversalGraph[nextRoomID]
+                if nextRoom == nil {
+                    // Build up an empty next room
+                    var exits: [Direction : Int?] = [:]
+                    for direction in nextRoomFromMap.exits.keys {
+                        exits[direction] = nil as Int?
+                    }
+                    
+                    // Assign the new room so we can access it outside of this if statement
+                    nextRoom = Room(roomID: nextRoomID, exits: exits)
+                    
+                    // Add the next room to our graph
+                    self.traversalGraph[nextRoomID] = nextRoom
+                }
+                
+                // set the entrance accordingly
+                nextRoom.exits[returningDirection] = currentRoomID as Int?
+                
+                // Since we were successfull, go ahead and add the direction to the path, and the returning direction to the backtracking path
+                self.traversalPath.append(direction)
+                self.backtrackingStack.append(returningDirection)
+                
+                self.updateCooldown(cooldown: cooldown)
+                self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
+            }
+            
+            areExitsAvailableToExplore = true
+            break
+        }
+        
+        if !areExitsAvailableToExplore {
+            guard let backtrackDirection = backtrackingStack.popLast() else {
+                // There wasn't anything to backtrack, so we ended up at the beginning without exploring everything?
+                
+                finishedBuildingTraversalPath = true
+                autoTraversal()
+                return
+            }
+            
+            map.move(direction: backtrackDirection) { (newRoom, cooldown, error) in
+                if let error = error {
+                    NSLog("Error backtracking! \(error)")
+                    
+                    let cooldown = cooldown ?? 30
+                    
+                    self.updateCooldown(cooldown: cooldown)
+                    self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
+                    
+                    return
+                }
+                
+                guard let cooldown = cooldown else {
+                    NSLog("The cooldown is missing! Something is wrong...")
+                    return
+                }
+                
+                NSLog("Backtracked \(backtrackDirection) to room \(newRoom!.roomID)")
+                
+                // If successfull, log the backtrack and continue looping until after the cooldown
+                self.traversalPath.append(backtrackDirection)
+                
+                self.updateCooldown(cooldown: cooldown)
+                self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
             }
         }
     }
