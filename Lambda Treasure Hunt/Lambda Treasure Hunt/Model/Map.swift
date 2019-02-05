@@ -52,6 +52,12 @@ class Map {
                     return
                 }
                 
+                if let errors = serverResponse.errors, !errors.isEmpty {
+                    NSLog("Errors: \(errors)")
+                    completion(nil, cooldown, NSError())
+                    return
+                }
+                
                 guard let roomID = serverResponse.room_id else {
                     NSLog("Room ID is missing!")
                     completion(nil, nil, NSError())
@@ -71,7 +77,7 @@ class Map {
                     var exits: [Direction : Int?] = [:]
                     for direction in availableExits {
                         // Set up the dictionary, but we don't know which rooms each exit leads to yet
-                        exits[direction] = nil
+                        exits[direction] = nil as Int?  // putting a nil Int, otherwise it's removing the entry https://stackoverflow.com/questions/26544573/how-to-add-nil-value-to-swift-dictionary
                     }
                     
                     room = Room(roomID: roomID, exits: exits)
@@ -79,13 +85,7 @@ class Map {
                 
                 self.currentRoom = room     // curernt room is now new room
                 
-                if let errors = serverResponse.errors, !errors.isEmpty {
-                    NSLog("Errors: \(errors)")
-                    completion(room, cooldown, NSError())
-                    return
-                }
-                
-                NSLog("Currently in room \(room)") // room will internally call description() to log the room info
+                NSLog("Currently in room \(room!)") // room will internally call description() to log the room info
                 
                 completion(room, cooldown, nil)
             }
@@ -112,11 +112,11 @@ class Map {
             // If both were the same type, we could've used a dictionary.
             struct MoveRequest: Codable {
                 var direction: Direction
-                var next_room_id: Int?
+                var next_room_id: String?
             }
             
             // Make our temporary request
-            let requestStruct = MoveRequest(direction: direction, next_room_id: nextRoomID)
+            let requestStruct = MoveRequest(direction: direction, next_room_id: nextRoomID == nil ? nil : String(nextRoomID!))
             // Encode the request
             request.httpBody = try JSONEncoder().encode(requestStruct)
         } catch {
@@ -158,6 +158,12 @@ class Map {
                     return
                 }
                 
+                if let errors = serverResponse.errors, !errors.isEmpty {
+                    NSLog("Errors: \(errors)")
+                    completion(nil, cooldown, NSError())
+                    return
+                }
+                
                 guard let roomID = serverResponse.room_id else {
                     NSLog("Room ID is missing!")
                     completion(nil, nil, NSError())
@@ -177,7 +183,7 @@ class Map {
                     var exits: [Direction : Int?] = [:]
                     for direction in availableExits {
                         // Set up the dictionary, but we don't know which rooms each exit leads to yet
-                        exits[direction] = nil
+                        exits[direction] = nil as Int?
                     }
                     
                     room = Room(roomID: roomID, exits: exits)
@@ -186,19 +192,13 @@ class Map {
                 let oldRoom = self.currentRoom
                 self.currentRoom = room     // curernt room is now new room
                 
-                if let errors = serverResponse.errors, !errors.isEmpty {
-                    NSLog("Errors: \(errors)")
-                    completion(room, cooldown, NSError())
-                    return
-                }
-                
                 // If there is no errors, go ahead and save the movement into the map
                 // First, assign the new room as an exit of the old room
                 oldRoom?.exits[direction] = roomID
                 // Then, assign the old room as the entrance to the new room
                 self.currentRoom?.exits[direction.opposite] = oldRoom?.roomID
                 
-                NSLog("Moved \(direction) to \(room)") // room will internally call description() to log the room info
+                NSLog("Moved \(direction) to \(room!)") // room will internally call description() to log the room info
                 
                 completion(room, cooldown, nil)
             }

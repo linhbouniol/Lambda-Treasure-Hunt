@@ -8,7 +8,7 @@
 
 import Foundation
 
-class Room {
+class Room: CustomStringConvertible {
     var roomID: Int
     var exits: [Direction : Int?] = [:]
     
@@ -17,7 +17,7 @@ class Room {
         self.exits = exits
     }
     
-    func description() -> String {
+    var description: String {
         return "Room \(roomID): \(exits)"
     }
 }

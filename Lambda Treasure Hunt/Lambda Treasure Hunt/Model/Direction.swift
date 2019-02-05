@@ -8,7 +8,7 @@
 
 import Foundation
 
-enum Direction: String, Codable {
+enum Direction: String, Codable, CustomStringConvertible {
     case north = "n"
     case south = "s"
     case east = "e"
@@ -24,6 +24,19 @@ enum Direction: String, Codable {
             return .west
         case .west:
             return .east
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .north:
+            return "North"
+        case .south:
+            return "South"
+        case .east:
+            return "East"
+        case .west:
+            return "West"
         }
     }
 }
