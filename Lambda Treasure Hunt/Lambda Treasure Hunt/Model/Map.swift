@@ -12,6 +12,40 @@ class Map {
     var rooms: [Int : Room] = [:]
     var currentRoom: Room?
     
+    init() {
+        // Loading the map file
+        let fileURL = self.saveFileURL
+        NSLog("Loading file from \(fileURL)")
+        
+        do {
+            let data = try Data(contentsOf: fileURL)
+            let loadedRooms = try JSONDecoder().decode([Int : Room].self, from: data)
+            self.rooms = loadedRooms
+            NSLog("Available rooms (\(self.rooms.count)):")
+            for room in self.rooms.values.sorted(by: { $0.roomID < $1.roomID }) {
+                NSLog("    - \(room)")
+            }
+        } catch {
+            NSLog("Error loading map file: \(error)")
+        }
+    }
+    
+    var saveFileURL: URL {
+        let fileManager = FileManager.default
+        guard let documentDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            fatalError("Error creating document directory!")
+        }
+        
+        do {
+            try fileManager.createDirectory(at: documentDirectory, withIntermediateDirectories: true, attributes: nil)
+        } catch {
+            fatalError("Error creating document directory: \(error)!")
+        }
+        
+        let fileURL = documentDirectory.appendingPathComponent("map.json", isDirectory: false)
+        return fileURL
+    }
+    
     func status(completion: @escaping (_ room: Room?, _ coolDown: TimeInterval?, _ error: Error?) -> Void) {
         let url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/init/")!
         
@@ -81,9 +115,12 @@ class Map {
                     }
                     
                     room = Room(roomID: roomID, exits: exits)
+                    self.rooms[roomID] = room
                 }
                 
                 self.currentRoom = room     // curernt room is now new room
+                
+                self.save()
                 
                 NSLog("Currently in room \(room!)") // room will internally call description() to log the room info
                 
@@ -187,6 +224,7 @@ class Map {
                     }
                     
                     room = Room(roomID: roomID, exits: exits)
+                    self.rooms[roomID] = room
                 }
                 
                 let oldRoom = self.currentRoom
@@ -196,12 +234,24 @@ class Map {
                 // First, assign the new room as an exit of the old room
                 oldRoom?.exits[direction] = roomID
                 // Then, assign the old room as the entrance to the new room
-                self.currentRoom?.exits[direction.opposite] = oldRoom?.roomID
+                self.currentRoom?.exits[direction.opposite] = oldRoom?.roomID as Int?
+                
+                self.save()
                 
                 NSLog("Moved \(direction) to \(room!)") // room will internally call description() to log the room info
                 
                 completion(room, cooldown, nil)
             }
         }.resume()
+    }
+    
+    func save() {
+        let fileURL = self.saveFileURL
+        do {
+            let data = try JSONEncoder().encode(rooms)
+            try data.write(to: fileURL)
+        } catch {
+            NSLog("Error saving map: \(error)")
+        }
     }
 }

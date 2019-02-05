@@ -8,7 +8,7 @@
 
 import Foundation
 
-class Room: CustomStringConvertible {
+class Room: CustomStringConvertible, Codable {
     var roomID: Int
     var exits: [Direction : Int?] = [:]
     
