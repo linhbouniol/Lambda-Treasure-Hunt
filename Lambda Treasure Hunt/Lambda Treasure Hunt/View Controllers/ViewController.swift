@@ -61,8 +61,6 @@ class ViewController: UIViewController {
         for (_, room) in map.rooms {
             guard let coordinates = room.coordinates else { continue }  // if there are no coordinates, skip to the next room
             
-            print("\(coordinates.x), \(coordinates.y)")
-            
             let frame = CGRect(x: CGFloat(coordinates.x) * 60.0, y: CGFloat(120-coordinates.y) * 60.0, width: 60.0, height: 60.0)   // 60x60 is the image
             let roomView = RoomView(frame: frame)
             roomView.room = room
@@ -92,7 +90,7 @@ class ViewController: UIViewController {
         }
         
         // Call breadth first search to get path to target room so we can change our name
-        NSLog("\(map.path(from: 171, to: 467))")
+        NSLog("%@", "\(map.path(from: 171, to: 467))")
         
         // map, call move, it will save the moves in a file
         // slowly build up a graph of all rooms every time move() is called
@@ -104,19 +102,19 @@ class ViewController: UIViewController {
         
         // Uncomment to find path to discover all rooms
 //        if cooldownTimer != nil {
-//            NSLog("Too fast! Please run again when the cooldown finishes!")
+//            NSLog("%@", "Too fast! Please run again when the cooldown finishes!")
 //            return
 //        }
 //
 //        // Get the starting room
 //        map.status { (room, cooldown, error) in
 //            if let error = error {
-//                NSLog("Error getting status: \(error). Build and run to try again.")
+//                NSLog("%@", "Error getting status: \(error). Build and run to try again.")
 //                return
 //            }
 //
 //            guard let cooldown = cooldown else {
-//                NSLog("The cooldown is not available!")
+//                NSLog("%@", "The cooldown is not available!")
 //                return
 //            }
 //
@@ -133,7 +131,7 @@ class ViewController: UIViewController {
     
     @IBAction func goNorth(_ sender: Any) {
         if cooldownTimer != nil {
-            NSLog("Too fast! Please wait!")
+            NSLog("%@", "Too fast! Please wait!")
             return
         }
         
@@ -146,7 +144,7 @@ class ViewController: UIViewController {
     
     @IBAction func goSouth(_ sender: Any) {
         if cooldownTimer != nil {
-            NSLog("Too fast! Please wait!")
+            NSLog("%@", "Too fast! Please wait!")
             return
         }
         
@@ -159,7 +157,7 @@ class ViewController: UIViewController {
     
     @IBAction func goEast(_ sender: Any) {
         if cooldownTimer != nil {
-            NSLog("Too fast! Please wait!")
+            NSLog("%@", "Too fast! Please wait!")
             return
         }
         
@@ -172,7 +170,7 @@ class ViewController: UIViewController {
     
     @IBAction func goWest(_ sender: Any) {
         if cooldownTimer != nil {
-            NSLog("Too fast! Please wait!")
+            NSLog("%@", "Too fast! Please wait!")
             return
         }
         
@@ -185,7 +183,7 @@ class ViewController: UIViewController {
     
     @IBAction func getInfo(_ sender: Any) {
         if cooldownTimer != nil {
-            NSLog("Too fast! Please wait!")
+            NSLog("%@", "Too fast! Please wait!")
             return
         }
         
@@ -212,14 +210,14 @@ class ViewController: UIViewController {
         
         // Build up the first room
         guard let startingRoom = map.currentRoom else {
-            NSLog("Error getting starting room!")
+            NSLog("%@", "Error getting starting room!")
             return
         }
         
         // Build up the first room
         let startingRoomID = startingRoom.roomID
         
-        NSLog("Starting from room \(startingRoomID)")
+        NSLog("%@", "Starting from room \(startingRoomID)")
         
         // Create an empty exits dictionary for the staring room to get us started
         var exits: [Direction : Int?] = [:]
@@ -244,24 +242,24 @@ class ViewController: UIViewController {
             
             // Print the traversal path
             let pythonFriendlyTraversalPath = "[\(traversalPath.map { "'\($0.rawValue)'" }.joined(separator: ", "))]"
-            NSLog("The traversal path is:\n\(pythonFriendlyTraversalPath)")
+            NSLog("%@", "The traversal path is:\n\(pythonFriendlyTraversalPath)")
             
             return
         }
         
         guard let currentRoomID = map.currentRoom?.roomID else {
-            NSLog("Current room is missing from the map. This shouldn't happen!")
+            NSLog("%@", "Current room is missing from the map. This shouldn't happen!")
             return
         }
         
         guard let currentRoom = traversalGraph[currentRoomID] else {
-            NSLog("The current room was missing from our graph! This shouldn't happen!")
+            NSLog("%@", "The current room was missing from our graph! This shouldn't happen!")
             return
         }
         
         var areExitsAvailableToExplore = false
         
-        for (direction, exitRoomID) in currentRoom.exits {
+        for (direction, exitRoomID) in currentRoom.exits.shuffled() {
             guard exitRoomID == nil else { // We are only interested in rooms that have not yet been explored
                 continue
             }
@@ -270,7 +268,7 @@ class ViewController: UIViewController {
             
             map.move(direction: direction) { (newRoomFromMap, cooldown, error) in
                 if let error = error {
-                    NSLog("Error moving to new room! \(error)")
+                    NSLog("%@", "Error moving to new room! \(error)")
                     
                     let cooldown = cooldown ?? 30
                     
@@ -281,18 +279,18 @@ class ViewController: UIViewController {
                 }
                 
                 guard let cooldown = cooldown else {
-                    NSLog("The cooldown is missing! Something is wrong...")
+                    NSLog("%@", "The cooldown is missing! Something is wrong...")
                     return
                 }
                 
                 guard let nextRoomFromMap = newRoomFromMap else {
-                    NSLog("New room should not be missing!!")
+                    NSLog("%@", "New room should not be missing!!")
                     return
                 }
                 
                 let nextRoomID = nextRoomFromMap.roomID
                 
-                NSLog("Moved \(direction) to room \(nextRoomID)")
+                NSLog("%@", "Moved \(direction) to room \(nextRoomID)")
                 currentRoom.exits[direction] = nextRoomID
                 
                 let returningDirection = direction.opposite
@@ -339,7 +337,7 @@ class ViewController: UIViewController {
             
             map.move(direction: backtrackDirection) { (newRoom, cooldown, error) in
                 if let error = error {
-                    NSLog("Error backtracking! \(error)")
+                    NSLog("%@", "Error backtracking! \(error)")
                     
                     let cooldown = cooldown ?? 30
                     
@@ -350,11 +348,11 @@ class ViewController: UIViewController {
                 }
                 
                 guard let cooldown = cooldown else {
-                    NSLog("The cooldown is missing! Something is wrong...")
+                    NSLog("%@", "The cooldown is missing! Something is wrong...")
                     return
                 }
                 
-                NSLog("Backtracked \(backtrackDirection) to room \(newRoom!.roomID)")
+                NSLog("%@", "Backtracked \(backtrackDirection) to room \(newRoom!.roomID)")
                 
                 // If successfull, log the backtrack and continue looping until after the cooldown
                 self.traversalPath.append(backtrackDirection)

@@ -15,18 +15,25 @@ class Map {
     init() {
         // Loading the map file
         let fileURL = self.saveFileURL
-        NSLog("Loading file from \(fileURL)")
+        NSLog("%@", "Loading file from \(fileURL)")
         
         do {
             let data = try Data(contentsOf: fileURL)
             let loadedRooms = try JSONDecoder().decode([Int : Room].self, from: data)
             self.rooms = loadedRooms
-            NSLog("Available rooms (\(self.rooms.count)):")
+            NSLog("%@", "Available rooms (\(self.rooms.count)):")
+            
+            var availableTreasures = Set<String>() // Set will only add items that are different, if the items are the same, it won't add it again
             for room in self.rooms.values.sorted(by: { $0.roomID < $1.roomID }) {
-                NSLog("    - \(room)")
+                NSLog("%@", "    - \(room)")
+                
+                for treasure in room.items ?? [] {
+                    availableTreasures.insert(treasure)
+                }
             }
+            NSLog("%@", "Available treasures: \(availableTreasures)")
         } catch {
-            NSLog("Error loading map file: \(error)")
+            NSLog("%@", "Error loading map file: \(error)")
         }
     }
     
@@ -57,7 +64,7 @@ class Map {
             DispatchQueue.main.async {
                 
                 if let error = error {
-                    NSLog("Error saving todo on server: \(error)")
+                    NSLog("%@", "Error saving todo on server: \(error)")
                     completion(nil, nil, error)
                     return
                 }
@@ -72,7 +79,7 @@ class Map {
                 do {
                     serverResponse = try JSONDecoder().decode(ServerResponse.self, from: data)
                 } catch {
-                    NSLog("Error decoding received data: \(error)")
+                    NSLog("%@", "Error decoding received data: \(error)")
                     completion(nil, nil, error)
                     return
                 }
@@ -81,25 +88,25 @@ class Map {
                 // Doing this here because those things will changed and every time they're different so it's easier to deal with them here as we decode
                 
                 guard let cooldown = serverResponse.cooldown else {
-                    NSLog("Cooldown is missing!")
+                    NSLog("%@", "Cooldown is missing!")
                     completion(nil, nil, NSError())
                     return
                 }
                 
                 if let errors = serverResponse.errors, !errors.isEmpty {
-                    NSLog("Errors: \(errors)")
+                    NSLog("%@", "Errors: \(errors)")
                     completion(nil, cooldown, NSError())
                     return
                 }
                 
                 guard let roomID = serverResponse.room_id else {
-                    NSLog("Room ID is missing!")
+                    NSLog("%@", "Room ID is missing!")
                     completion(nil, nil, NSError())
                     return
                 }
                 
                 guard let availableExits = serverResponse.exits else {
-                    NSLog("Exits are missing!")
+                    NSLog("%@", "Exits are missing!")
                     completion(nil, nil, NSError())
                     return
                 }
@@ -131,7 +138,7 @@ class Map {
                 
                 self.save()
                 
-                NSLog("Currently in room \(room!)") // room will internally call description() to log the room info
+                NSLog("%@", "Currently in room \(room!)") // room will internally call description() to log the room info
                 
                 completion(room, cooldown, nil)
             }
@@ -140,7 +147,7 @@ class Map {
     
     func move(direction: Direction, completion: @escaping (_ room: Room?, _ coolDown: TimeInterval?, _ error: Error?) -> Void) {
         if currentRoom == nil {
-            NSLog("No current room yet. We may move in an unexpected direction!")
+            NSLog("%@", "No current room yet. We may move in an unexpected direction!")
         }
         
         let url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/move/")!
@@ -166,7 +173,7 @@ class Map {
             // Encode the request
             request.httpBody = try JSONEncoder().encode(requestStruct)
         } catch {
-            NSLog("Unable to encode direction: \(error)")
+            NSLog("%@", "Unable to encode direction: \(error)")
             completion(nil, nil, error)
             return
         }
@@ -175,7 +182,7 @@ class Map {
             DispatchQueue.main.async {
         
                 if let error = error {
-                    NSLog("Error saving todo on server: \(error)")
+                    NSLog("%@", "Error saving todo on server: \(error)")
                     completion(nil, nil, error)
                     return
                 }
@@ -190,7 +197,7 @@ class Map {
                 do {
                     serverResponse = try JSONDecoder().decode(ServerResponse.self, from: data)
                 } catch {
-                    NSLog("Error decoding received data: \(error)")
+                    NSLog("%@", "Error decoding received data: \(error)")
                     completion(nil, nil, error)
                     return
                 }
@@ -199,25 +206,25 @@ class Map {
                 // Doing this here because those things will changed and every time they're different so it's easier to deal with them here as we decode
                 
                 guard let cooldown = serverResponse.cooldown else {
-                    NSLog("Cooldown is missing!")
+                    NSLog("%@", "Cooldown is missing!")
                     completion(nil, nil, NSError())
                     return
                 }
                 
                 if let errors = serverResponse.errors, !errors.isEmpty {
-                    NSLog("Errors: \(errors)")
+                    NSLog("%@", "Errors: \(errors)")
                     completion(nil, cooldown, NSError())
                     return
                 }
                 
                 guard let roomID = serverResponse.room_id else {
-                    NSLog("Room ID is missing!")
+                    NSLog("%@", "Room ID is missing!")
                     completion(nil, nil, NSError())
                     return
                 }
                 
                 guard let availableExits = serverResponse.exits else {
-                    NSLog("Exits are missing!")
+                    NSLog("%@", "Exits are missing!")
                     completion(nil, nil, NSError())
                     return
                 }
@@ -256,7 +263,7 @@ class Map {
                 
                 self.save()
                 
-                NSLog("Moved \(direction) to \(room!)") // room will internally call description() to log the room info
+                NSLog("%@", "Moved \(direction) to \(room!)") // room will internally call description() to log the room info
                 
                 completion(room, cooldown, nil)
             }
@@ -269,7 +276,7 @@ class Map {
             let data = try JSONEncoder().encode(rooms)
             try data.write(to: fileURL)
         } catch {
-            NSLog("Error saving map: \(error)")
+            NSLog("%@", "Error saving map: \(error)")
         }
     }
     

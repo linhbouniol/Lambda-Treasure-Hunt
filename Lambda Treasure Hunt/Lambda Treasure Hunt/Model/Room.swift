@@ -23,6 +23,17 @@ class Room: CustomStringConvertible, Codable {
     }
     
     var description: String {
-        return "Room \(roomID): \(exits), Title: \(title ?? "N/A"), Messages: \(messages ?? ["N/A"])"
+        let mappedExits = exits.map { (arg0) -> String in
+            
+            let (key, value) = arg0
+            
+            if let value = value {
+                return "\(key): \(value)"
+            }
+            
+            return "\(key): ?"
+        }
+        
+        return "Room \(roomID): \(mappedExits), Title: \(title ?? "N/A"), Messages: \(messages ?? ["N/A"]), Items: \(items ?? ["N/A"])"
     }
 }
