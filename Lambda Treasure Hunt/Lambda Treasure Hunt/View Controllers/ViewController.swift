@@ -46,12 +46,26 @@ class ViewController: UIViewController {
             self.cooldownLabel.text = "Cooldown: \(Int(ceil(remainingCooldown)))s"
         })
     }
+    
+    func updatePlayerPosition(cooldown: TimeInterval = 0.0) {
+        guard let coordinates = map.currentRoom?.coordinates else { return }
+        
+        // Add the x and y parts because  we're positioning the player's view  relative to the room, technically, it is not in the room, just floating on top
+        let playerFrame = CGRect(x: CGFloat(coordinates.x) * 60.0 + (60.0 - 32.0)/2, y: CGFloat(120-coordinates.y) * 60.0 + (60.0 - 32.0)/2, width: 32.0, height: 32.0)
+        
+        if cooldown <= 0 {  // no cooldown was specified
+            playerImageView.frame = playerFrame
+        } else {
+            UIView.animate(withDuration: cooldown * 0.9, delay: 0.0, options: .curveEaseOut, animations: {
+                self.playerImageView.frame = playerFrame
+            }, completion: nil)
+        }
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
         // Setting up room views
-        
         roomViewContainer = UIView(frame: CGRect(x: 0.0, y: 0.0, width: 120.0 * 60.0, height: 120.0 * 60.0))
 //        roomViewContainer.backgroundColor = .orange
         scrollView.addSubview(roomViewContainer)
@@ -84,6 +98,12 @@ class ViewController: UIViewController {
         }
         
         scrollView.scrollRectToVisible(CGRect(x: 60.0 * 60.0, y: 60.0 * 60.0, width: 60.0, height: 60.0), animated: false)
+        
+        // Animate player's image
+        playerImageView = UIImageView(frame: CGRect(x: 0.0, y: 0.0, width: 32.0, height: 32.0))
+        playerImageView.image = UIImage(named: "PlayerProfile")
+        scrollView.addSubview(playerImageView)
+        updatePlayerPosition()
         
         if let cooldownDate = UserDefaults.standard.object(forKey: "CooldownDate") as? Date {
             updateCooldown(cooldown: cooldownDate.timeIntervalSinceNow)
@@ -128,6 +148,7 @@ class ViewController: UIViewController {
     
     var roomViewContainer: UIView!
     var roomViews: [Int : UIView] = [:]
+    var playerImageView: UIImageView!
     
     @IBAction func goNorth(_ sender: Any) {
         if cooldownTimer != nil {
@@ -138,6 +159,7 @@ class ViewController: UIViewController {
         map.move(direction: .north) { (room, cooldown, error) in
             if let cooldown = cooldown {
                 self.updateCooldown(cooldown: cooldown)
+                self.updatePlayerPosition(cooldown: cooldown)
             }
         }
     }
@@ -151,6 +173,7 @@ class ViewController: UIViewController {
         map.move(direction: .south) { (room, cooldown, error) in
             if let cooldown = cooldown {
                 self.updateCooldown(cooldown: cooldown)
+                self.updatePlayerPosition(cooldown: cooldown)
             }
         }
     }
@@ -164,6 +187,7 @@ class ViewController: UIViewController {
         map.move(direction: .east) { (room, cooldown, error) in
             if let cooldown = cooldown {
                 self.updateCooldown(cooldown: cooldown)
+                self.updatePlayerPosition(cooldown: cooldown)
             }
         }
     }
@@ -177,6 +201,7 @@ class ViewController: UIViewController {
         map.move(direction: .west) { (room, cooldown, error) in
             if let cooldown = cooldown {
                 self.updateCooldown(cooldown: cooldown)
+                self.updatePlayerPosition(cooldown: cooldown)
             }
         }
     }
@@ -190,6 +215,7 @@ class ViewController: UIViewController {
         map.status { (room, cooldown, error) in
             if let cooldown = cooldown {
                 self.updateCooldown(cooldown: cooldown)
+                self.updatePlayerPosition(cooldown: cooldown)
             }
         }
     }
@@ -273,6 +299,7 @@ class ViewController: UIViewController {
                     let cooldown = cooldown ?? 30
                     
                     self.updateCooldown(cooldown: cooldown)
+                    self.updatePlayerPosition(cooldown: cooldown)
                     self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
                     
                     return
@@ -319,6 +346,7 @@ class ViewController: UIViewController {
                 self.backtrackingStack.append(returningDirection)
                 
                 self.updateCooldown(cooldown: cooldown)
+                self.updatePlayerPosition(cooldown: cooldown)
                 self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
             }
             
@@ -342,6 +370,7 @@ class ViewController: UIViewController {
                     let cooldown = cooldown ?? 30
                     
                     self.updateCooldown(cooldown: cooldown)
+                    self.updatePlayerPosition(cooldown: cooldown)
                     self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
                     
                     return
@@ -358,6 +387,7 @@ class ViewController: UIViewController {
                 self.traversalPath.append(backtrackDirection)
                 
                 self.updateCooldown(cooldown: cooldown)
+                self.updatePlayerPosition(cooldown: cooldown)
                 self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
             }
         }
