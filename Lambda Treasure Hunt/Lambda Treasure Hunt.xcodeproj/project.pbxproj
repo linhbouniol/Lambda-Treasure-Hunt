@@ -17,6 +17,7 @@
 		39FBFCFD2208BC360039CA7A /* ServerResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FBFCFC2208BC360039CA7A /* ServerResponse.swift */; };
 		39FBFCFF2208BDAF0039CA7A /* Direction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FBFCFE2208BDAF0039CA7A /* Direction.swift */; };
 		39FBFD01220A133A0039CA7A /* Coordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FBFD00220A133A0039CA7A /* Coordinates.swift */; };
+		39FBFD03220A808D0039CA7A /* RoomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FBFD02220A808D0039CA7A /* RoomView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 		39FBFCFC2208BC360039CA7A /* ServerResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerResponse.swift; sourceTree = "<group>"; };
 		39FBFCFE2208BDAF0039CA7A /* Direction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Direction.swift; sourceTree = "<group>"; };
 		39FBFD00220A133A0039CA7A /* Coordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinates.swift; sourceTree = "<group>"; };
+		39FBFD02220A808D0039CA7A /* RoomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoomView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,7 +67,7 @@
 			isa = PBXGroup;
 			children = (
 				39FBFCF52208BBE00039CA7A /* Model */,
-				39FBFCF62208BBE70039CA7A /* Model Controller */,
+				39FBFCF62208BBE70039CA7A /* Views */,
 				39FBFCF22208BBA60039CA7A /* View Controllers */,
 				39FBFCF32208BBB80039CA7A /* Storyboards */,
 				39FBFCF42208BBC60039CA7A /* Resources */,
@@ -112,11 +114,12 @@
 			path = Model;
 			sourceTree = "<group>";
 		};
-		39FBFCF62208BBE70039CA7A /* Model Controller */ = {
+		39FBFCF62208BBE70039CA7A /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				39FBFD02220A808D0039CA7A /* RoomView.swift */,
 			);
-			path = "Model Controller";
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -191,6 +194,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				39FBFCE32208BB620039CA7A /* ViewController.swift in Sources */,
+				39FBFD03220A808D0039CA7A /* RoomView.swift in Sources */,
 				39FBFCF82208BC180039CA7A /* Map.swift in Sources */,
 				39FBFD01220A133A0039CA7A /* Coordinates.swift in Sources */,
 				39FBFCFA2208BC200039CA7A /* Room.swift in Sources */,

@@ -9,7 +9,7 @@
 import Foundation
 
 class Map {
-    var rooms: [Int : Room] = [:]
+    var rooms: [Int : Room] = [:]   // roomID: room, which has the exits, title, messages, etc
     var currentRoom: Room?
     
     init() {

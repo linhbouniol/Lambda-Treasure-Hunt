@@ -50,6 +50,43 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // Setting up room views
+        
+        roomViewContainer = UIView(frame: CGRect(x: 0.0, y: 0.0, width: 120.0 * 60.0, height: 120.0 * 60.0))
+//        roomViewContainer.backgroundColor = .orange
+        scrollView.addSubview(roomViewContainer)
+        scrollView.contentSize = roomViewContainer.bounds.size  // scroll is as big as the container, so the whole thing is scrollable
+        
+        // Start plotting rooms
+        for (_, room) in map.rooms {
+            guard let coordinates = room.coordinates else { continue }  // if there are no coordinates, skip to the next room
+            
+            print("\(coordinates.x), \(coordinates.y)")
+            
+            let frame = CGRect(x: CGFloat(coordinates.x) * 60.0, y: CGFloat(120-coordinates.y) * 60.0, width: 60.0, height: 60.0)   // 60x60 is the image
+            let roomView = RoomView(frame: frame)
+            roomView.room = room
+            
+            switch room.title {
+            case "Shop":
+                roomView.tintColor = UIColor(hue: 0.33, saturation: 1.0, brightness: 0.8, alpha: 1.0)
+            case "A brightly lit room":
+                roomView.tintColor = UIColor(hue: 0.85, saturation: 1.0, brightness: 0.9, alpha: 1.0)
+            case "Name Changer":
+                roomView.tintColor = UIColor(hue: 0.0, saturation: 1.0, brightness: 0.9, alpha: 1.0)
+            case "A misty room":
+                roomView.tintColor = UIColor(hue: CGFloat.random(in: 0.0...1.0), saturation: 0.6, brightness: 0.1, alpha: 0.5)
+            default:
+                roomView.tintColor = UIColor(hue: CGFloat.random(in: 0.0...1.0), saturation: 0.6, brightness: 0.9, alpha: 1.0)
+            }
+            
+            roomViewContainer.addSubview(roomView)
+            
+            roomViews[room.roomID] = roomView
+        }
+        
+        scrollView.scrollRectToVisible(CGRect(x: 60.0 * 60.0, y: 60.0 * 60.0, width: 60.0, height: 60.0), animated: false)
+        
         if let cooldownDate = UserDefaults.standard.object(forKey: "CooldownDate") as? Date {
             updateCooldown(cooldown: cooldownDate.timeIntervalSinceNow)
         }
@@ -89,6 +126,10 @@ class ViewController: UIViewController {
     }
     
     @IBOutlet weak var cooldownLabel: UILabel!
+    @IBOutlet weak var scrollView: UIScrollView!
+    
+    var roomViewContainer: UIView!
+    var roomViews: [Int : UIView] = [:]
     
     @IBAction func goNorth(_ sender: Any) {
         if cooldownTimer != nil {
