@@ -16,6 +16,7 @@
 		39FBFCFA2208BC200039CA7A /* Room.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FBFCF92208BC200039CA7A /* Room.swift */; };
 		39FBFCFD2208BC360039CA7A /* ServerResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FBFCFC2208BC360039CA7A /* ServerResponse.swift */; };
 		39FBFCFF2208BDAF0039CA7A /* Direction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FBFCFE2208BDAF0039CA7A /* Direction.swift */; };
+		39FBFD01220A133A0039CA7A /* Coordinates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FBFD00220A133A0039CA7A /* Coordinates.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 		39FBFCF92208BC200039CA7A /* Room.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Room.swift; sourceTree = "<group>"; };
 		39FBFCFC2208BC360039CA7A /* ServerResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerResponse.swift; sourceTree = "<group>"; };
 		39FBFCFE2208BDAF0039CA7A /* Direction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Direction.swift; sourceTree = "<group>"; };
+		39FBFD00220A133A0039CA7A /* Coordinates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinates.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -105,6 +107,7 @@
 				39FBFCF92208BC200039CA7A /* Room.swift */,
 				39FBFCFC2208BC360039CA7A /* ServerResponse.swift */,
 				39FBFCFE2208BDAF0039CA7A /* Direction.swift */,
+				39FBFD00220A133A0039CA7A /* Coordinates.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -189,6 +192,7 @@
 			files = (
 				39FBFCE32208BB620039CA7A /* ViewController.swift in Sources */,
 				39FBFCF82208BC180039CA7A /* Map.swift in Sources */,
+				39FBFD01220A133A0039CA7A /* Coordinates.swift in Sources */,
 				39FBFCFA2208BC200039CA7A /* Room.swift in Sources */,
 				39FBFCE12208BB620039CA7A /* AppDelegate.swift in Sources */,
 				39FBFCFD2208BC360039CA7A /* ServerResponse.swift in Sources */,

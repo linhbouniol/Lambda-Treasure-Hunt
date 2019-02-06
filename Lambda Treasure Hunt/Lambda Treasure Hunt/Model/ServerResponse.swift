@@ -13,7 +13,7 @@ struct ServerResponse: Codable {
     var title: String? = nil
     var description: String? = nil
     var coordinates: String? = nil
-//    var player: [Any]? = nil
+    var player: [String]? = nil
     var items: [String]? = nil
     var exits: [Direction]? = nil
     var cooldown: Double? = nil

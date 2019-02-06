@@ -118,6 +118,15 @@ class Map {
                     self.rooms[roomID] = room
                 }
                 
+                // Get values from serverResponse and save them to our properties
+                room.title = serverResponse.title
+                if let coordinates = serverResponse.coordinates {
+                    room.coordinates = Coordinates(string: coordinates)
+                }
+                room.players = serverResponse.player
+                room.items = serverResponse.items
+                room.messages = serverResponse.messages
+                
                 self.currentRoom = room     // curernt room is now new room
                 
                 self.save()
@@ -226,6 +235,15 @@ class Map {
                     room = Room(roomID: roomID, exits: exits)
                     self.rooms[roomID] = room
                 }
+                
+                // Get values from serverResponse and save them to our properties
+                room.title = serverResponse.title
+                if let coordinates = serverResponse.coordinates {
+                    room.coordinates = Coordinates(string: coordinates)
+                }
+                room.players = serverResponse.player
+                room.items = serverResponse.items
+                room.messages = serverResponse.messages
                 
                 let oldRoom = self.currentRoom
                 self.currentRoom = room     // curernt room is now new room
