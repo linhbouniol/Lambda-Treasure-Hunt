@@ -57,7 +57,7 @@ class ViewController: UIViewController {
     }
     
     func updatePlayerPosition(cooldown: TimeInterval = 0.0) {
-        guard let coordinates = map.currentRoom?.coordinates else { return }
+        guard let currentRoom = map.currentRoom, let coordinates = currentRoom.coordinates else { return }
         
         // Add the x and y parts because  we're positioning the player's view  relative to the room, technically, it is not in the room, just floating on top
         let playerFrame = CGRect(x: CGFloat(coordinates.x) * 60.0 + (60.0 - 32.0)/2, y: CGFloat(120-coordinates.y) * 60.0 + (60.0 - 32.0)/2, width: 32.0, height: 32.0)
@@ -73,12 +73,16 @@ class ViewController: UIViewController {
             
             scrollView.scrollRectToVisible(playerFrame.insetBy(dx: -(scrollView.frame.width - 400)/2.0, dy: -(scrollView.frame.height - 400)/2.0), animated: true)
         }
+        
+        itemsTextView.text = "Items in Room:\n\((currentRoom.items ?? []).map({ "• \($0.capitalized)" }).joined(separator: "\n"))"
     }
     
     func updatePlayerStats() {
         let player = map.player
         
         statsLabel.text = "\(player.name ?? "")     🧺: \(player.encumbrance ?? 0)     💪🏻: \(player.strength ?? 0)     🏃🏻‍♀️: \(player.speed ?? 0)     💰: \(player.gold ?? 0)"
+        
+        inventoryTextView.text = "Inventory:\n\((player.inventory ?? []).map({ "• \($0.capitalized)" }).joined(separator: "\n"))"
     }
 
     override func viewDidLoad() {
@@ -175,6 +179,9 @@ class ViewController: UIViewController {
     @IBOutlet weak var cooldownLabel: UILabel!
     @IBOutlet weak var statsLabel: UILabel!
     @IBOutlet weak var scrollView: UIScrollView!
+    @IBOutlet weak var messagesLabel: UILabel!
+    @IBOutlet weak var inventoryTextView: UITextView!
+    @IBOutlet weak var itemsTextView: UITextView!
     
     var roomViewContainer: UIView!
     var roomViews: [Int : UIView] = [:]
@@ -318,6 +325,7 @@ class ViewController: UIViewController {
                     if let cooldown = cooldown {
                         self.updateCooldown(cooldown: cooldown)
                         self.updatePlayerPosition(cooldown: cooldown)
+                        self.updatePlayerStats()
                     }
                 })
             }))
@@ -362,6 +370,7 @@ class ViewController: UIViewController {
                     if let cooldown = cooldown {
                         self.updateCooldown(cooldown: cooldown)
                         self.updatePlayerPosition(cooldown: cooldown)
+                        self.updatePlayerStats()
                     }
                 })
             }))
@@ -443,6 +452,7 @@ class ViewController: UIViewController {
                         
                         self.updateCooldown(cooldown: cooldown)
                         self.updatePlayerPosition(cooldown: cooldown)
+                        self.updatePlayerStats()
                         self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
                         
                         return
@@ -455,6 +465,7 @@ class ViewController: UIViewController {
                     
                     self.updateCooldown(cooldown: cooldown)
                     self.updatePlayerPosition(cooldown: cooldown)
+                    self.updatePlayerStats()
                     self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
                 }
                 
@@ -476,6 +487,7 @@ class ViewController: UIViewController {
                                     
                                     self.updateCooldown(cooldown: cooldown)
                                     self.updatePlayerPosition(cooldown: cooldown)
+                                    self.updatePlayerStats()
                                     self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
                                 })
                             })
@@ -483,6 +495,7 @@ class ViewController: UIViewController {
                         
                         self.updateCooldown(cooldown: cooldown)
                         self.updatePlayerPosition(cooldown: cooldown)
+                        self.updatePlayerStats()
                         self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
                         
                         // We don't want to update the status here because it would be wasted doing it for every sale. Instead, we only do it once at the very end

@@ -84,6 +84,27 @@
                                                 <action selector="sell:" destination="BYZ-38-t0r" eventType="touchUpInside" id="pk8-Pj-xbg"/>
                                             </connections>
                                         </button>
+                                        <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" editable="NO" text="Items in Room:" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="Nwj-fi-uW2">
+                                            <rect key="frame" x="887" y="8" width="147" height="135"/>
+                                            <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMinY="YES"/>
+                                            <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                            <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                            <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
+                                        </textView>
+                                        <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" editable="NO" text="Inventory:" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="xbp-5u-MW1">
+                                            <rect key="frame" x="732" y="8" width="147" height="135"/>
+                                            <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMinY="YES"/>
+                                            <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                            <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                            <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
+                                        </textView>
+                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="Messages &amp; Errors" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="RCq-PK-TOE">
+                                            <rect key="frame" x="8" y="8" width="716" height="64"/>
+                                            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                            <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                            <nil key="textColor"/>
+                                            <nil key="highlightedColor"/>
+                                        </label>
                                     </subviews>
                                     <constraints>
                                         <constraint firstItem="lwY-7f-h5l" firstAttribute="leading" secondItem="acb-Zr-RwY" secondAttribute="trailing" constant="52" id="HVr-Wg-kDk"/>
@@ -163,6 +184,9 @@
                     </view>
                     <connections>
                         <outlet property="cooldownLabel" destination="O1O-cN-PZj" id="A1c-lt-2RK"/>
+                        <outlet property="inventoryTextView" destination="xbp-5u-MW1" id="fiv-HT-cHF"/>
+                        <outlet property="itemsTextView" destination="Nwj-fi-uW2" id="Hww-mf-ghN"/>
+                        <outlet property="messagesLabel" destination="RCq-PK-TOE" id="Bis-v7-MCH"/>
                         <outlet property="scrollView" destination="vEr-ES-Xzd" id="sIY-Ey-2aq"/>
                         <outlet property="statsLabel" destination="sVZ-wM-L9u" id="DXN-ro-lDL"/>
                     </connections>
