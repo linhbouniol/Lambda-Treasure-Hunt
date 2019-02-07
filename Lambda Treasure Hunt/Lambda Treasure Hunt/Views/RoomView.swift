@@ -44,6 +44,19 @@ class RoomView: UIControl {
             }
             
             backgroundImageView.image = UIImage(named: imageName)
+            
+            switch room.title {
+            case "Shop":
+                self.tintColor = UIColor(hue: 0.33, saturation: 1.0, brightness: 0.8, alpha: 1.0)
+            case "A brightly lit room":
+                self.tintColor = UIColor(hue: 0.85, saturation: 1.0, brightness: 0.9, alpha: 1.0)
+            case "Name Changer":
+                self.tintColor = UIColor(hue: 0.0, saturation: 1.0, brightness: 0.9, alpha: 1.0)
+            case "A misty room":
+                self.tintColor = UIColor(hue: CGFloat.random(in: 0.0...1.0), saturation: 0.6, brightness: 0.1, alpha: 0.5)
+            default:
+                self.tintColor = UIColor(hue: CGFloat.random(in: 0.0...1.0), saturation: 0.6, brightness: 0.9, alpha: 1.0)
+            }
         }
     }
     

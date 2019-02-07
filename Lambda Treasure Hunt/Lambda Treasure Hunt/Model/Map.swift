@@ -199,6 +199,20 @@ class Map {
                     
                     room = Room(roomID: roomID, exits: exits)
                     self.rooms[roomID] = room
+                } else {    // If the room in the cache exists...
+                    var updatedExits: [Direction : Int?] = [:]  // new exits dictionary
+                    for direction in availableExits {
+                        // While we're adding each available exit, check if we already know which room comes next
+                        if let existingExit = room.exits[direction] {
+                            // If we do, we use that room
+                            updatedExits[direction] = existingExit as Int?
+                        } else {
+                            // Otherwise, we set it to nil
+                            updatedExits[direction] = nil as Int?
+                        }
+                    }
+                    // Update the room with the available exits
+                    room.exits = updatedExits
                 }
                 
                 // Get values from serverResponse and save them to our properties
@@ -226,7 +240,7 @@ class Map {
             NSLog("%@", "No current room yet. We may move in an unexpected direction!")
         }
         
-        let url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/move/")!
+        let url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/fly/")!
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -312,15 +326,30 @@ class Map {
                 // Construct the room
                 // Check if there is already a room with this ID; if yes, we're updating it; if no, we're adding it
                 var room: Room! = self.rooms[roomID]
+                // ...When we found a new room/exit...
                 if room == nil {
                     var exits: [Direction : Int?] = [:]
                     for direction in availableExits {
                         // Set up the dictionary, but we don't know which rooms each exit leads to yet
                         exits[direction] = nil as Int?
                     }
-                    
+                    // Create the room object with room ID and exits dictionary, but we are just remembering which exit directions there are, the room IDs for each exit is nil
                     room = Room(roomID: roomID, exits: exits)
                     self.rooms[roomID] = room
+                } else {    // If the room in the cache exists...when we go through the room/exit again and want to update chagnes...
+                    var updatedExits: [Direction : Int?] = [:]  // new exits dictionary
+                    for direction in availableExits {
+                        // While we're adding each available exit, check if we already know which room comes next
+                        if let existingExit = room.exits[direction] {
+                            // If we do, we use that room
+                            updatedExits[direction] = existingExit as Int?
+                        } else {
+                            // Otherwise, we set it to nil
+                            updatedExits[direction] = nil as Int?
+                        }
+                    }
+                    // Update the room with the available exits
+                    room.exits = updatedExits
                 }
                 
                 // Get values from serverResponse and save them to our properties
@@ -497,6 +526,20 @@ class Map {
                     
                     room = Room(roomID: roomID, exits: exits)
                     self.rooms[roomID] = room
+                } else {    // If the room in the cache exists...
+                    var updatedExits: [Direction : Int?] = [:]  // new exits dictionary
+                    for direction in availableExits {
+                        // While we're adding each available exit, check if we already know which room comes next
+                        if let existingExit = room.exits[direction] {
+                            // If we do, we use that room
+                            updatedExits[direction] = existingExit as Int?
+                        } else {
+                            // Otherwise, we set it to nil
+                            updatedExits[direction] = nil as Int?
+                        }
+                    }
+                    // Update the room with the available exits
+                    room.exits = updatedExits
                 }
                 
                 // Get values from serverResponse and save them to our properties
@@ -611,6 +654,20 @@ class Map {
                     
                     room = Room(roomID: roomID, exits: exits)
                     self.rooms[roomID] = room
+                } else {    // If the room in the cache exists...
+                    var updatedExits: [Direction : Int?] = [:]  // new exits dictionary
+                    for direction in availableExits {
+                        // While we're adding each available exit, check if we already know which room comes next
+                        if let existingExit = room.exits[direction] {
+                            // If we do, we use that room
+                            updatedExits[direction] = existingExit as Int?
+                        } else {
+                            // Otherwise, we set it to nil
+                            updatedExits[direction] = nil as Int?
+                        }
+                    }
+                    // Update the room with the available exits
+                    room.exits = updatedExits
                 }
                 
                 // Get values from serverResponse and save them to our properties
@@ -729,6 +786,20 @@ class Map {
                     
                     room = Room(roomID: roomID, exits: exits)
                     self.rooms[roomID] = room
+                } else {    // If the room in the cache exists...
+                    var updatedExits: [Direction : Int?] = [:]  // new exits dictionary
+                    for direction in availableExits {
+                        // While we're adding each available exit, check if we already know which room comes next
+                        if let existingExit = room.exits[direction] {
+                            // If we do, we use that room
+                            updatedExits[direction] = existingExit as Int?
+                        } else {
+                            // Otherwise, we set it to nil
+                            updatedExits[direction] = nil as Int?
+                        }
+                    }
+                    // Update the room with the available exits
+                    room.exits = updatedExits
                 }
                 
                 // Get values from serverResponse and save them to our properties

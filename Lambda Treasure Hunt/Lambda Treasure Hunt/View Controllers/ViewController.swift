@@ -83,6 +83,25 @@ class ViewController: UIViewController {
     func updatePlayerPosition(cooldown: TimeInterval = 0.0) {
         guard let currentRoom = map.currentRoom, let coordinates = currentRoom.coordinates else { return }
         
+        // Create any missing rooms we run across, and update the view of the ones we visit. It makes the code messy by putting this code here, but since this method gets called every time we mode the player, it's a good location to create any rooms that don't exist yet.
+        
+        // Check if we have a room view for the specified room already... If yes, set the room property of it so it goes ahead and updates it's image, etc.
+        if let roomView = roomViews[currentRoom.roomID] {
+            roomView.room = currentRoom
+        } else { // If no, recalculate the frame of the new view
+            let frame = CGRect(x: CGFloat(coordinates.x) * 60.0, y: CGFloat(120-coordinates.y) * 60.0, width: 60.0, height: 60.0)   // 60x60 is the image
+            // Create the room view
+            let roomView = RoomView(frame: frame)
+            // Add goToRoom() to it
+            roomView.addTarget(self, action: #selector(goToRoom(_:)), for: .touchUpInside)
+            // Assign the current room to the view
+            roomView.room = currentRoom
+            // Add room to container view
+            roomViewContainer.addSubview(roomView)
+            // Assign the room view to the roomViews cache so we can access it easily
+            roomViews[currentRoom.roomID] = roomView
+        }
+        
         // Add the x and y parts because  we're positioning the player's view  relative to the room, technically, it is not in the room, just floating on top
         let playerFrame = CGRect(x: CGFloat(coordinates.x) * 60.0 + (60.0 - 32.0)/2, y: CGFloat(120-coordinates.y) * 60.0 + (60.0 - 32.0)/2, width: 32.0, height: 32.0)
         
@@ -128,7 +147,7 @@ class ViewController: UIViewController {
         scrollView.addSubview(roomViewContainer)
         scrollView.contentSize = roomViewContainer.bounds.size  // scroll is as big as the container, so the whole thing is scrollable
         
-        // Start plotting rooms
+        // Start plotting rooms we already know about, that are in the map property
         for (_, room) in map.rooms {
             guard let coordinates = room.coordinates else { continue }  // if there are no coordinates, skip to the next room
             
@@ -136,19 +155,6 @@ class ViewController: UIViewController {
             let roomView = RoomView(frame: frame)
             roomView.addTarget(self, action: #selector(goToRoom(_:)), for: .touchUpInside)
             roomView.room = room
-            
-            switch room.title {
-            case "Shop":
-                roomView.tintColor = UIColor(hue: 0.33, saturation: 1.0, brightness: 0.8, alpha: 1.0)
-            case "A brightly lit room":
-                roomView.tintColor = UIColor(hue: 0.85, saturation: 1.0, brightness: 0.9, alpha: 1.0)
-            case "Name Changer":
-                roomView.tintColor = UIColor(hue: 0.0, saturation: 1.0, brightness: 0.9, alpha: 1.0)
-            case "A misty room":
-                roomView.tintColor = UIColor(hue: CGFloat.random(in: 0.0...1.0), saturation: 0.6, brightness: 0.1, alpha: 0.5)
-            default:
-                roomView.tintColor = UIColor(hue: CGFloat.random(in: 0.0...1.0), saturation: 0.6, brightness: 0.9, alpha: 1.0)
-            }
             
             roomViewContainer.addSubview(roomView)
             
@@ -215,7 +221,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var itemsTextView: UITextView!
     
     var roomViewContainer: UIView!
-    var roomViews: [Int : UIView] = [:]
+    var roomViews: [Int : RoomView] = [:]
     var playerImageView: UIImageView!
     
     @IBAction func goNorth(_ sender: Any) {
