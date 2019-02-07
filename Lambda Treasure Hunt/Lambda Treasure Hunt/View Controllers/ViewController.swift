@@ -17,7 +17,31 @@ class ViewController: UIViewController {
         case disabled    // Manual control
     }
     
-    var currentAutoPilotMode: AutoPilotMode = .disabled
+    var currentAutoPilotMode: AutoPilotMode = .disabled {
+        didSet {
+            // Unless the old value was in manual mode (aka diabled), don't bother calling start auto traversal, since it is already auto-traversing via one of the auto-pilot modes
+            // If we were in disabled mode, and we change to a auto mode, call start traversal. If we were in an auto mode, and change it to another auto-mode, autoTraversal() will pick up the new mode. If we change to disable mode, autoTraverssal() will stop when the cooldown is reached.
+            guard case .disabled = oldValue else { return }
+            
+            if case let .goToTarget(roomID) = currentAutoPilotMode { // show (.isHidden = false) and position x view
+                
+            } else { // hide (.isHidden = true) the x view
+                
+            }
+            
+            switch currentAutoPilotMode {
+            case .autoDiscovery, .treasureHunt, .goToTarget:
+                if let cooldown = cooldownDate?.timeIntervalSinceNow {
+                    self.perform(#selector(self.startAutoTraversal), with: nil, afterDelay: max(cooldown, 0.0))
+                } else {
+                    self.startAutoTraversal()
+                }
+            default:
+                // Don't do anything in particular in other cases
+                break
+            }
+        }
+    }
     
     var map = Map()
     var cooldownDate: Date?
@@ -101,6 +125,7 @@ class ViewController: UIViewController {
             
             let frame = CGRect(x: CGFloat(coordinates.x) * 60.0, y: CGFloat(120-coordinates.y) * 60.0, width: 60.0, height: 60.0)   // 60x60 is the image
             let roomView = RoomView(frame: frame)
+            roomView.addTarget(self, action: #selector(goToRoom(_:)), for: .touchUpInside)
             roomView.room = room
             
             switch room.title {
@@ -188,6 +213,8 @@ class ViewController: UIViewController {
     var playerImageView: UIImageView!
     
     @IBAction func goNorth(_ sender: Any) {
+        currentAutoPilotMode = .disabled
+        
         if cooldownTimer != nil {
             NSLog("%@", "Too fast! Please wait!")
             return
@@ -202,6 +229,8 @@ class ViewController: UIViewController {
     }
     
     @IBAction func goSouth(_ sender: Any) {
+        currentAutoPilotMode = .disabled
+        
         if cooldownTimer != nil {
             NSLog("%@", "Too fast! Please wait!")
             return
@@ -216,6 +245,8 @@ class ViewController: UIViewController {
     }
     
     @IBAction func goEast(_ sender: Any) {
+        currentAutoPilotMode = .disabled
+        
         if cooldownTimer != nil {
             NSLog("%@", "Too fast! Please wait!")
             return
@@ -230,6 +261,8 @@ class ViewController: UIViewController {
     }
     
     @IBAction func goWest(_ sender: Any) {
+        currentAutoPilotMode = .disabled
+        
         if cooldownTimer != nil {
             NSLog("%@", "Too fast! Please wait!")
             return
@@ -244,6 +277,8 @@ class ViewController: UIViewController {
     }
     
     @IBAction func getInfo(_ sender: Any) {
+        currentAutoPilotMode = .disabled
+        
         if cooldownTimer != nil {
             NSLog("%@", "Too fast! Please wait!")
             return
@@ -259,8 +294,6 @@ class ViewController: UIViewController {
                         if let cooldown = cooldown {
                             self.updateCooldown(cooldown: cooldown)
                             self.updatePlayerPosition(cooldown: cooldown)
-                            
-                            self.updatePlayerStats()
                         }
                     })
                 })
@@ -269,11 +302,26 @@ class ViewController: UIViewController {
         }
     }
     
+    @IBAction func goToRoom(_ sender: RoomView) {
+        guard let room = sender.room else { return }
+        
+        currentAutoPilotMode = .goToTarget(roomID: room.roomID)
+    }
+    
+    @IBAction func discoverAllRooms(_ sender: Any) {
+        
+        currentAutoPilotMode = .autoDiscovery
+    }
+    
+    @IBAction func findTreasure(_ sender: Any) {
+        
+        currentAutoPilotMode = .treasureHunt
+    }
+    
     @IBAction func take(_ sender: Any) {
-        if cooldownTimer != nil {
-            NSLog("%@", "Too fast! Please wait!")
-            return
-        }
+        currentAutoPilotMode = .disabled
+        
+        if userShouldWait() { return }
         
         guard let room = map.currentRoom, let items = room.items, !items.isEmpty else {
             let alert = UIAlertController(title: "No items in this room.", message: nil, preferredStyle: .alert)
@@ -305,10 +353,9 @@ class ViewController: UIViewController {
     }
     
     @IBAction func drop(_ sender: Any) {
-        if cooldownTimer != nil {
-            NSLog("%@", "Too fast! Please wait!")
-            return
-        }
+        currentAutoPilotMode = .disabled
+        
+        if userShouldWait() { return }
         
         guard let inventory = map.player.inventory, !inventory.isEmpty else {
             let alert = UIAlertController(title: "No items in inventory.", message: nil, preferredStyle: .alert)
@@ -325,7 +372,6 @@ class ViewController: UIViewController {
                     if let cooldown = cooldown {
                         self.updateCooldown(cooldown: cooldown)
                         self.updatePlayerPosition(cooldown: cooldown)
-                        self.updatePlayerStats()
                     }
                 })
             }))
@@ -341,7 +387,7 @@ class ViewController: UIViewController {
         
     }
     
-    func showUserWait() -> Bool {
+    func userShouldWait() -> Bool {
         if cooldownTimer == nil {
             return false // don't wait, we are good to go immediately
         }
@@ -353,7 +399,9 @@ class ViewController: UIViewController {
     }
     
     @IBAction func sell(_ sender: Any) {
-        if showUserWait() { return }
+        currentAutoPilotMode = .disabled
+        
+        if userShouldWait() { return }
         
         guard let inventory = map.player.inventory, !inventory.isEmpty else {
             let alert = UIAlertController(title: "No items in inventory.", message: nil, preferredStyle: .alert)
@@ -370,7 +418,6 @@ class ViewController: UIViewController {
                     if let cooldown = cooldown {
                         self.updateCooldown(cooldown: cooldown)
                         self.updatePlayerPosition(cooldown: cooldown)
-                        self.updatePlayerStats()
                     }
                 })
             }))
@@ -434,6 +481,55 @@ class ViewController: UIViewController {
     }
     
     @objc func autoTraversal() {    // Use for auto discovery and treasure hunt
+        if case .disabled = currentAutoPilotMode { return }
+        
+        if case let .goToTarget(roomID) = currentAutoPilotMode {
+            guard let currentRoom = map.currentRoom else { return }
+            guard var path = map.path(from: currentRoom.roomID, to: roomID), path.count > 1 else {
+                currentAutoPilotMode = .disabled
+                return
+            }
+            
+            let nextRoomID = path[1] // the second item in the path is the next room we want to visit
+            
+            var directionToTake: Direction!
+            
+            for (direction, exitRoomID) in currentRoom.exits {
+                if nextRoomID == exitRoomID {
+                    directionToTake = direction
+                }
+            }
+            
+            map.move(direction: directionToTake) { (newRoom, cooldown, error) in
+                if let error = error {
+                    NSLog("%@", "Error backtracking! \(error)")
+                    
+                    let cooldown = cooldown ?? 30
+                    
+                    self.updateCooldown(cooldown: cooldown)
+                    self.updatePlayerPosition(cooldown: cooldown)
+                    self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
+                    
+                    return
+                }
+                
+                guard let cooldown = cooldown else {
+                    NSLog("%@", "The cooldown is missing! Something is wrong...")
+                    return
+                }
+                
+                NSLog("%@", "Walked \(directionToTake!) towards \(roomID) to room \(newRoom!.roomID)")
+                
+                // If successfull, log the backtrack and continue looping until after the cooldown
+                self.traversalPath.append(directionToTake)
+                
+                self.updateCooldown(cooldown: cooldown)
+                self.updatePlayerPosition(cooldown: cooldown)
+                self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
+            }
+            
+            return
+        }
         
         // Check if we're treasure hunting
         if case .treasureHunt = currentAutoPilotMode, let shopRoom = map.shopRoom {
@@ -452,7 +548,6 @@ class ViewController: UIViewController {
                         
                         self.updateCooldown(cooldown: cooldown)
                         self.updatePlayerPosition(cooldown: cooldown)
-                        self.updatePlayerStats()
                         self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
                         
                         return
@@ -465,7 +560,6 @@ class ViewController: UIViewController {
                     
                     self.updateCooldown(cooldown: cooldown)
                     self.updatePlayerPosition(cooldown: cooldown)
-                    self.updatePlayerStats()
                     self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
                 }
                 
@@ -487,7 +581,6 @@ class ViewController: UIViewController {
                                     
                                     self.updateCooldown(cooldown: cooldown)
                                     self.updatePlayerPosition(cooldown: cooldown)
-                                    self.updatePlayerStats()
                                     self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
                                 })
                             })
@@ -495,7 +588,6 @@ class ViewController: UIViewController {
                         
                         self.updateCooldown(cooldown: cooldown)
                         self.updatePlayerPosition(cooldown: cooldown)
-                        self.updatePlayerStats()
                         self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
                         
                         // We don't want to update the status here because it would be wasted doing it for every sale. Instead, we only do it once at the very end
@@ -510,7 +602,6 @@ class ViewController: UIViewController {
                         
                         self.updateCooldown(cooldown: cooldown)
                         self.updatePlayerPosition(cooldown: cooldown)
-                        self.updatePlayerStats()
                         self.perform(#selector(self.startAutoTraversal), with: nil, afterDelay: cooldown)
                     })
                 }
@@ -532,7 +623,7 @@ class ViewController: UIViewController {
                 
                 map.move(direction: directionToTake) { (newRoom, cooldown, error) in
                     if let error = error {
-                        NSLog("%@", "Error backtracking! \(error)")
+                        NSLog("%@", "Error backtracking!")
                         
                         let cooldown = cooldown ?? 30
                         
@@ -578,7 +669,11 @@ class ViewController: UIViewController {
             
             if case .treasureHunt = currentAutoPilotMode { // If we somehow discovered every room, but didn't sell in  between, just go ands try again
                 startAutoTraversal()
+                return
             }
+            
+            // We discovered all rooms, and we are not treasure hunting, so stop!
+            currentAutoPilotMode = .disabled
             
             return
         }
@@ -681,7 +776,7 @@ class ViewController: UIViewController {
                                 }
                                 
                                 self.updateCooldown(cooldown: cooldown)
-                                self.updatePlayerStats()
+                                self.updatePlayerPosition()
                                 
                                 self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
                             })
