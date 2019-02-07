@@ -10,6 +10,15 @@ import UIKit
 
 class ViewController: UIViewController {
     
+    enum AutoPilotMode {
+        case AutoDiscovery
+        case GoToTarget(roomID: Int)
+        case TreasureHunt
+        case Disable    // Manual control
+    }
+    
+    var currentAutoPilotMode: AutoPilotMode = .Disable
+    
     var map = Map()
     var cooldownDate: Date?
     var cooldownTimer: Timer?
@@ -55,15 +64,28 @@ class ViewController: UIViewController {
         
         if cooldown <= 0 {  // no cooldown was specified
             playerImageView.frame = playerFrame
+            
+            scrollView.scrollRectToVisible(playerFrame.insetBy(dx: -(scrollView.frame.width - 32)/2.0, dy: -(scrollView.frame.height - 32)/2.0), animated: true)
         } else {
             UIView.animate(withDuration: cooldown * 0.9, delay: 0.0, options: .curveEaseOut, animations: {
                 self.playerImageView.frame = playerFrame
             }, completion: nil)
+            
+            scrollView.scrollRectToVisible(playerFrame.insetBy(dx: -(scrollView.frame.width - 400)/2.0, dy: -(scrollView.frame.height - 400)/2.0), animated: true)
         }
+    }
+    
+    func updatePlayerStats() {
+        let player = map.player
+        
+        statsLabel.text = "\(player.name ?? "")     🧺: \(player.encumbrance ?? 0)     💪🏻: \(player.strength ?? 0)     🏃🏻‍♀️: \(player.speed ?? 0)     💰: \(player.gold ?? 0)"
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // Autopilot mode test
+        currentAutoPilotMode = .TreasureHunt
         
         // Setting up room views
         roomViewContainer = UIView(frame: CGRect(x: 0.0, y: 0.0, width: 120.0 * 60.0, height: 120.0 * 60.0))
@@ -97,20 +119,44 @@ class ViewController: UIViewController {
             roomViews[room.roomID] = roomView
         }
         
-        scrollView.scrollRectToVisible(CGRect(x: 60.0 * 60.0, y: 60.0 * 60.0, width: 60.0, height: 60.0), animated: false)
-        
         // Animate player's image
         playerImageView = UIImageView(frame: CGRect(x: 0.0, y: 0.0, width: 32.0, height: 32.0))
-        playerImageView.image = UIImage(named: "PlayerProfile")
+        playerImageView.image = UIImage(named: "PlayerAnimoji")
         scrollView.addSubview(playerImageView)
         updatePlayerPosition()
         
         if let cooldownDate = UserDefaults.standard.object(forKey: "CooldownDate") as? Date {
             updateCooldown(cooldown: cooldownDate.timeIntervalSinceNow)
+
+            Timer.scheduledTimer(withTimeInterval: max(cooldownDate.timeIntervalSinceNow, 0.0), repeats: false) { (_) in
+                self.map.status { (room, cooldown, error) in
+                    guard let cooldown = cooldown else {
+                        NSLog("%@", "The cooldown is not available!")
+                        return
+                    }
+                    
+                    self.updateCooldown(cooldown: cooldown)
+                    Timer.scheduledTimer(withTimeInterval: cooldown, repeats: false, block: { (_) in
+                        self.map.playerStatus(completion: { (player, cooldown, error) in
+                            guard let cooldown = cooldown else {
+                                NSLog("%@", "The cooldown is not available!")
+                                return
+                            }
+                            
+                            self.updateCooldown(cooldown: cooldown)
+                            self.updatePlayerPosition()
+                            self.updatePlayerStats()
+                            // Uncomment to find path to discover all rooms
+                            self.perform(#selector(self.startAutoTraversal), with: nil, afterDelay: cooldown)
+                        })
+                    })
+                }
+            }
         }
         
         // Call breadth first search to get path to target room so we can change our name
-        NSLog("%@", "\(map.path(from: 171, to: 467))")
+//        NSLog("%@", "\(map.path(from: 386, to: 0))")
+        
         
         // map, call move, it will save the moves in a file
         // slowly build up a graph of all rooms every time move() is called
@@ -120,30 +166,10 @@ class ViewController: UIViewController {
         // traversal isnt using the map at all, but since its moving its contributing to the map
         
         
-        // Uncomment to find path to discover all rooms
-//        if cooldownTimer != nil {
-//            NSLog("%@", "Too fast! Please run again when the cooldown finishes!")
-//            return
-//        }
-//
-//        // Get the starting room
-//        map.status { (room, cooldown, error) in
-//            if let error = error {
-//                NSLog("%@", "Error getting status: \(error). Build and run to try again.")
-//                return
-//            }
-//
-//            guard let cooldown = cooldown else {
-//                NSLog("%@", "The cooldown is not available!")
-//                return
-//            }
-//
-//            self.updateCooldown(cooldown: cooldown)
-//            self.perform(#selector(self.startAutoTraversal), with: nil, afterDelay: cooldown)
-//        }
     }
     
     @IBOutlet weak var cooldownLabel: UILabel!
+    @IBOutlet weak var statsLabel: UILabel!
     @IBOutlet weak var scrollView: UIScrollView!
     
     var roomViewContainer: UIView!
@@ -215,9 +241,135 @@ class ViewController: UIViewController {
         map.status { (room, cooldown, error) in
             if let cooldown = cooldown {
                 self.updateCooldown(cooldown: cooldown)
-                self.updatePlayerPosition(cooldown: cooldown)
+                self.updatePlayerPosition()
+                
+                Timer.scheduledTimer(withTimeInterval: cooldown, repeats: false, block: { (_) in
+                    self.map.playerStatus(completion: { (player, cooldown, error) in
+                        if let cooldown = cooldown {
+                            self.updateCooldown(cooldown: cooldown)
+                            self.updatePlayerPosition(cooldown: cooldown)
+                            
+                            self.updatePlayerStats()
+                        }
+                    })
+                })
             }
+            
         }
+    }
+    
+    @IBAction func take(_ sender: Any) {
+        if cooldownTimer != nil {
+            NSLog("%@", "Too fast! Please wait!")
+            return
+        }
+        
+        guard let room = map.currentRoom, let items = room.items, !items.isEmpty else {
+            let alert = UIAlertController(title: "No items in this room.", message: nil, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            self.present(alert, animated: true, completion: nil)
+            return
+        }
+        
+        let actionSheet = UIAlertController(title: "Choose Treasure to Take…", message: nil, preferredStyle: .actionSheet)
+        
+        for item in items {
+            actionSheet.addAction(UIAlertAction(title: item.capitalized, style: .default, handler: { (action) in
+                self.map.takeTreasure(item: item, completion: { (room, cooldown, error) in
+                    if let cooldown = cooldown {
+                        self.updateCooldown(cooldown: cooldown)
+                        self.updatePlayerPosition(cooldown: cooldown)
+                    }
+                })
+            }))
+        }
+        
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        
+        guard let roomView = self.roomViews[room.roomID] else { return }
+        
+        actionSheet.popoverPresentationController?.sourceView = roomView
+        actionSheet.popoverPresentationController?.sourceRect = roomView.bounds
+        self.present(actionSheet, animated: true, completion: nil)
+    }
+    
+    @IBAction func drop(_ sender: Any) {
+        if cooldownTimer != nil {
+            NSLog("%@", "Too fast! Please wait!")
+            return
+        }
+        
+        guard let inventory = map.player.inventory, !inventory.isEmpty else {
+            let alert = UIAlertController(title: "No items in inventory.", message: nil, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            self.present(alert, animated: true, completion: nil)
+            return
+        }
+        
+        let actionSheet = UIAlertController(title: "Choose Treasure to Drop…", message: nil, preferredStyle: .actionSheet)
+        
+        for item in inventory {
+            actionSheet.addAction(UIAlertAction(title: item.capitalized, style: .default, handler: { (action) in
+                self.map.dropTreasure(item: item, completion: { (room, cooldown, error) in
+                    if let cooldown = cooldown {
+                        self.updateCooldown(cooldown: cooldown)
+                        self.updatePlayerPosition(cooldown: cooldown)
+                    }
+                })
+            }))
+        }
+        
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        
+        guard let room = map.currentRoom, let roomView = self.roomViews[room.roomID] else { return }
+        
+        actionSheet.popoverPresentationController?.sourceView = roomView
+        actionSheet.popoverPresentationController?.sourceRect = roomView.bounds
+        self.present(actionSheet, animated: true, completion: nil)
+        
+    }
+    
+    func showUserWait() -> Bool {
+        if cooldownTimer == nil {
+            return false // don't wait, we are good to go immediately
+        }
+        
+        // show alert
+        NSLog("%@", "Too fast! Please wait!")
+        
+        return true
+    }
+    
+    @IBAction func sell(_ sender: Any) {
+        if showUserWait() { return }
+        
+        guard let inventory = map.player.inventory, !inventory.isEmpty else {
+            let alert = UIAlertController(title: "No items in inventory.", message: nil, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+            self.present(alert, animated: true, completion: nil)
+            return
+        }
+        
+        let actionSheet = UIAlertController(title: "Choose Treasure to Sell…", message: nil, preferredStyle: .actionSheet)
+        
+        for item in inventory {
+            actionSheet.addAction(UIAlertAction(title: item.capitalized, style: .default, handler: { (action) in
+                self.map.sell(item: item, completion: { (room, cooldown, error) in
+                    if let cooldown = cooldown {
+                        self.updateCooldown(cooldown: cooldown)
+                        self.updatePlayerPosition(cooldown: cooldown)
+                    }
+                })
+            }))
+        }
+        
+        actionSheet.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        
+        guard let room = map.currentRoom, let roomView = self.roomViews[room.roomID] else { return }
+        
+        actionSheet.popoverPresentationController?.sourceView = roomView
+        actionSheet.popoverPresentationController?.sourceRect = roomView.bounds
+        self.present(actionSheet, animated: true, completion: nil)
     }
     
     // MARK: - Discover Shortest Path
@@ -262,7 +414,51 @@ class ViewController: UIViewController {
         autoTraversal()
     }
     
-    @objc func autoTraversal() {
+    @objc func autoTraversal() {    // Use for auto discovery and treasure hunt
+        
+        // Check if we're treasure hunting
+//        if case currentAutoPilotMode = AutoPilotMode.TreasureHunt {
+//            // if there is treasure in current room, take it and return
+//            if map.currentRoom?.items > 0 {
+//                // takeTreasure()
+//            }
+//
+//            // call take method, wait for cooldown
+//            // call autoTraversal, if there is still treasure it will take it again, if none, it will move on to next room
+//        }
+        
+        
+        
+        if let currentRoom = map.currentRoom, let items = currentRoom.items, !items.isEmpty, let inventory = map.player.inventory, inventory.count < 10 {
+            
+            map.takeTreasure(item: items[0]) { (room, cooldown, error) in
+                if let error = error {
+                    NSLog("%@", "Error taking item! \(error)")
+                    
+                    let cooldown = cooldown ?? 30
+                    
+                    self.updateCooldown(cooldown: cooldown)
+                    self.updatePlayerPosition(cooldown: cooldown)
+                    self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
+                    
+                    return
+                }
+                
+                guard let cooldown = cooldown else {
+                    NSLog("%@", "The cooldown is missing! Something is wrong...")
+                    return
+                }
+                
+                self.updateCooldown(cooldown: cooldown)
+                self.updatePlayerPosition(cooldown: cooldown)
+                self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
+            }
+            
+            return
+        }
+        
+        
+        
         guard traversalGraph.count < 500 && !finishedBuildingTraversalPath else {
             // We traversed the whole graph at this point, so we are done!
             
@@ -294,7 +490,7 @@ class ViewController: UIViewController {
             
             map.move(direction: direction) { (newRoomFromMap, cooldown, error) in
                 if let error = error {
-                    NSLog("%@", "Error moving to new room! \(error)")
+//                    NSLog("%@", "Error moving to new room! \(error)")
                     
                     let cooldown = cooldown ?? 30
                     

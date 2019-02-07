@@ -11,6 +11,7 @@ import Foundation
 class Map {
     var rooms: [Int : Room] = [:]   // roomID: room, which has the exits, title, messages, etc
     var currentRoom: Room?
+    var player = Player()
     
     init() {
         // Loading the map file
@@ -51,6 +52,66 @@ class Map {
         
         let fileURL = documentDirectory.appendingPathComponent("map.json", isDirectory: false)
         return fileURL
+    }
+    
+    func playerStatus(completion: @escaping (_ player: Player?, _ coolDown: TimeInterval?, _ error: Error?) -> Void) {
+        let url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/status/")!
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Token b1a0e8086d92bc85dda1a47d390b2e1bf32f74d4", forHTTPHeaderField: "Authorization")
+        
+        URLSession.shared.dataTask(with: request) { (data, _, error) in
+            DispatchQueue.main.async {
+                
+                if let error = error {
+                    NSLog("%@", "Error saving todo on server: \(error)")
+                    completion(nil, nil, error)
+                    return
+                }
+                
+                guard let data = data else {
+                    completion(nil, nil, NSError())
+                    return
+                }
+                
+                let serverResponse: ServerResponse
+                
+                do {
+                    serverResponse = try JSONDecoder().decode(ServerResponse.self, from: data)
+                } catch {
+                    NSLog("%@", "Error decoding received data: \(error)")
+                    completion(nil, nil, error)
+                    return
+                }
+                
+                // Check for the three things we're interested in: room, cooldown, error
+                // Doing this here because those things will changed and every time they're different so it's easier to deal with them here as we decode
+                
+                guard let cooldown = serverResponse.cooldown else {
+                    NSLog("%@", "Cooldown is missing!")
+                    completion(nil, nil, NSError())
+                    return
+                }
+                
+                if let errors = serverResponse.errors, !errors.isEmpty {
+                    NSLog("%@", "Errors: \(errors)")
+                    completion(nil, cooldown, NSError())
+                    return
+                }
+            
+                self.player.name = serverResponse.name
+                self.player.encumbrance = serverResponse.encumbrance
+                self.player.strength = serverResponse.strength
+                self.player.speed = serverResponse.speed
+                self.player.gold = serverResponse.gold
+                self.player.inventory = serverResponse.inventory
+                
+                NSLog("%@", "Player: \(self.player)")
+                
+                completion(self.player, cooldown, nil)
+            }
+        }.resume()
     }
     
     func status(completion: @escaping (_ room: Room?, _ coolDown: TimeInterval?, _ error: Error?) -> Void) {
@@ -314,5 +375,342 @@ class Map {
             }
         }
         return nil
+    }
+    
+    func takeTreasure(item: String, completion: @escaping (_ room: Room?, _ coolDown: TimeInterval?, _ error: Error?) -> Void) {
+        
+        if currentRoom == nil {
+            NSLog("%@", "No current room yet. We may move in an unexpected direction!")
+        }
+        
+        let url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/take/")!
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Token b1a0e8086d92bc85dda1a47d390b2e1bf32f74d4", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            // Make a temporary struct to represent the move request. This will have two properties; one is a String and one is an Int.
+            // If both were the same type, we could've used a dictionary.
+            struct TakeRequest: Codable {
+                var name: String
+            }
+            
+            // Make our temporary request
+            let requestStruct = TakeRequest(name: item)
+            // Encode the request
+            request.httpBody = try JSONEncoder().encode(requestStruct)
+        } catch {
+            NSLog("%@", "Unable to encode item: \(error)")
+            completion(nil, nil, error)
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { (data, _, error) in
+            DispatchQueue.main.async {
+                
+                if let error = error {
+                    NSLog("%@", "Error saving todo on server: \(error)")
+                    completion(nil, nil, error)
+                    return
+                }
+                
+                guard let data = data else {
+                    completion(nil, nil, NSError())
+                    return
+                }
+                
+                let serverResponse: ServerResponse
+                
+                do {
+                    serverResponse = try JSONDecoder().decode(ServerResponse.self, from: data)
+                } catch {
+                    NSLog("%@", "Error decoding received data: \(error)")
+                    completion(nil, nil, error)
+                    return
+                }
+                
+                // Check for the three things we're interested in: room, cooldown, error
+                // Doing this here because those things will changed and every time they're different so it's easier to deal with them here as we decode
+                
+                guard let cooldown = serverResponse.cooldown else {
+                    NSLog("%@", "Cooldown is missing!")
+                    completion(nil, nil, NSError())
+                    return
+                }
+                
+                if let errors = serverResponse.errors, !errors.isEmpty {
+                    NSLog("%@", "Errors: \(errors)")
+                    completion(nil, cooldown, NSError())
+                    return
+                }
+                
+                guard let roomID = serverResponse.room_id else {
+                    NSLog("%@", "Room ID is missing!")
+                    completion(nil, nil, NSError())
+                    return
+                }
+                
+                guard let availableExits = serverResponse.exits else {
+                    NSLog("%@", "Exits are missing!")
+                    completion(nil, nil, NSError())
+                    return
+                }
+                
+                // Construct the room
+                // Check if there is already a room with this ID; if yes, we're updating it; if no, we're adding it
+                var room: Room! = self.rooms[roomID]
+                if room == nil {
+                    var exits: [Direction : Int?] = [:]
+                    for direction in availableExits {
+                        // Set up the dictionary, but we don't know which rooms each exit leads to yet
+                        exits[direction] = nil as Int?
+                    }
+                    
+                    room = Room(roomID: roomID, exits: exits)
+                    self.rooms[roomID] = room
+                }
+                
+                // Get values from serverResponse and save them to our properties
+                room.items = serverResponse.items
+                
+                self.currentRoom = room     // curernt room is now new room
+                self.player.inventory?.append(item)
+                
+                self.save()
+                
+                NSLog("%@", "Just picked up a \(item)") // room will internally call description() to log the room info
+                
+                completion(room, cooldown, nil)
+            }
+        }.resume()
+    }
+    
+    func dropTreasure(item: String, completion: @escaping (_ room: Room?, _ coolDown: TimeInterval?, _ error: Error?) -> Void) {
+        
+        if currentRoom == nil {
+            NSLog("%@", "No current room yet. We may move in an unexpected direction!")
+        }
+        
+        let url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/drop/")!
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Token b1a0e8086d92bc85dda1a47d390b2e1bf32f74d4", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            // Make a temporary struct to represent the move request. This will have two properties; one is a String and one is an Int.
+            // If both were the same type, we could've used a dictionary.
+            struct DropRequest: Codable {
+                var name: String
+            }
+            
+            // Make our temporary request
+            let requestStruct = DropRequest(name: item)
+            // Encode the request
+            request.httpBody = try JSONEncoder().encode(requestStruct)
+        } catch {
+            NSLog("%@", "Unable to encode item: \(error)")
+            completion(nil, nil, error)
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { (data, _, error) in
+            DispatchQueue.main.async {
+                
+                if let error = error {
+                    NSLog("%@", "Error saving todo on server: \(error)")
+                    completion(nil, nil, error)
+                    return
+                }
+                
+                guard let data = data else {
+                    completion(nil, nil, NSError())
+                    return
+                }
+                
+                let serverResponse: ServerResponse
+                
+                do {
+                    serverResponse = try JSONDecoder().decode(ServerResponse.self, from: data)
+                } catch {
+                    NSLog("%@", "Error decoding received data: \(error)")
+                    completion(nil, nil, error)
+                    return
+                }
+                
+                // Check for the three things we're interested in: room, cooldown, error
+                // Doing this here because those things will changed and every time they're different so it's easier to deal with them here as we decode
+                
+                guard let cooldown = serverResponse.cooldown else {
+                    NSLog("%@", "Cooldown is missing!")
+                    completion(nil, nil, NSError())
+                    return
+                }
+                
+                if let errors = serverResponse.errors, !errors.isEmpty {
+                    NSLog("%@", "Errors: \(errors)")
+                    completion(nil, cooldown, NSError())
+                    return
+                }
+                
+                guard let roomID = serverResponse.room_id else {
+                    NSLog("%@", "Room ID is missing!")
+                    completion(nil, nil, NSError())
+                    return
+                }
+                
+                guard let availableExits = serverResponse.exits else {
+                    NSLog("%@", "Exits are missing!")
+                    completion(nil, nil, NSError())
+                    return
+                }
+                
+                // Construct the room
+                // Check if there is already a room with this ID; if yes, we're updating it; if no, we're adding it
+                var room: Room! = self.rooms[roomID]
+                if room == nil {
+                    var exits: [Direction : Int?] = [:]
+                    for direction in availableExits {
+                        // Set up the dictionary, but we don't know which rooms each exit leads to yet
+                        exits[direction] = nil as Int?
+                    }
+                    
+                    room = Room(roomID: roomID, exits: exits)
+                    self.rooms[roomID] = room
+                }
+                
+                // Get values from serverResponse and save them to our properties
+                room.items = serverResponse.items
+                
+                self.currentRoom = room     // current room is now new room
+                
+                if let index = self.player.inventory?.firstIndex(of: item) {
+                    self.player.inventory?.remove(at: index)
+                }
+                
+                self.save()
+                
+                NSLog("%@", "Just dropped a \(item)") // room will internally call description() to log the room info
+                
+                completion(room, cooldown, nil)
+            }
+        }.resume()
+    }
+    
+    func sell(item: String, completion: @escaping (_ room: Room?, _ coolDown: TimeInterval?, _ error: Error?) -> Void) {
+        
+        if currentRoom == nil {
+            NSLog("%@", "No current room yet. We may move in an unexpected direction!")
+        }
+        
+        let url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/sell/")!
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Token b1a0e8086d92bc85dda1a47d390b2e1bf32f74d4", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            // Make a temporary struct to represent the move request. This will have two properties; one is a String and one is an Int.
+            // If both were the same type, we could've used a dictionary.
+            struct SellRequest: Codable {
+                var name: String
+                var confirm = "yes"
+            }
+            
+            // Make our temporary request
+            let requestStruct = SellRequest(name: item, confirm: "yes")
+            // Encode the request
+            request.httpBody = try JSONEncoder().encode(requestStruct)
+        } catch {
+            NSLog("%@", "Unable to encode item: \(error)")
+            completion(nil, nil, error)
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { (data, _, error) in
+            DispatchQueue.main.async {
+                
+                if let error = error {
+                    NSLog("%@", "Error saving todo on server: \(error)")
+                    completion(nil, nil, error)
+                    return
+                }
+                
+                guard let data = data else {
+                    completion(nil, nil, NSError())
+                    return
+                }
+                
+                let serverResponse: ServerResponse
+                
+                do {
+                    serverResponse = try JSONDecoder().decode(ServerResponse.self, from: data)
+                } catch {
+                    NSLog("%@", "Error decoding received data: \(error)")
+                    completion(nil, nil, error)
+                    return
+                }
+                
+                // Check for the three things we're interested in: room, cooldown, error
+                // Doing this here because those things will changed and every time they're different so it's easier to deal with them here as we decode
+                
+                guard let cooldown = serverResponse.cooldown else {
+                    NSLog("%@", "Cooldown is missing!")
+                    completion(nil, nil, NSError())
+                    return
+                }
+                
+                if let errors = serverResponse.errors, !errors.isEmpty {
+                    NSLog("%@", "Errors: \(errors)")
+                    completion(nil, cooldown, NSError())
+                    return
+                }
+                
+                guard let roomID = serverResponse.room_id else {
+                    NSLog("%@", "Room ID is missing!")
+                    completion(nil, nil, NSError())
+                    return
+                }
+                
+                guard let availableExits = serverResponse.exits else {
+                    NSLog("%@", "Exits are missing!")
+                    completion(nil, nil, NSError())
+                    return
+                }
+                
+                // Construct the room
+                // Check if there is already a room with this ID; if yes, we're updating it; if no, we're adding it
+                var room: Room! = self.rooms[roomID]
+                if room == nil {
+                    var exits: [Direction : Int?] = [:]
+                    for direction in availableExits {
+                        // Set up the dictionary, but we don't know which rooms each exit leads to yet
+                        exits[direction] = nil as Int?
+                    }
+                    
+                    room = Room(roomID: roomID, exits: exits)
+                    self.rooms[roomID] = room
+                }
+                
+                // Get values from serverResponse and save them to our properties
+                room.items = serverResponse.items
+                
+                self.currentRoom = room     // current room is now new room
+                
+                if let index = self.player.inventory?.firstIndex(of: item) {
+                    self.player.inventory?.remove(at: index)
+                }
+                
+                self.save()
+                
+                NSLog("%@", "Just sold a \(item)") // room will internally call description() to log the room info
+                
+                completion(room, cooldown, nil)
+            }
+        }.resume()
     }
 }
