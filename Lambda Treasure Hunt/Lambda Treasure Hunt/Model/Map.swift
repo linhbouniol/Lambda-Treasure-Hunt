@@ -80,7 +80,7 @@ class Map {
                 }
                 
                 guard let data = data else {
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -99,7 +99,7 @@ class Map {
                 
                 guard let cooldown = serverResponse.cooldown else {
                     NSLog("%@", "Cooldown is missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -108,7 +108,7 @@ class Map {
                 
                 if let errors = serverResponse.errors, !errors.isEmpty {
                     NSLog("%@", "Errors: \(errors)")
-                    completion(nil, cooldown, NSError())
+                    completion(nil, cooldown, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
             
@@ -143,7 +143,7 @@ class Map {
                 }
                 
                 guard let data = data else {
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -162,7 +162,7 @@ class Map {
                 
                 guard let cooldown = serverResponse.cooldown else {
                     NSLog("%@", "Cooldown is missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -171,19 +171,19 @@ class Map {
                 
                 if let errors = serverResponse.errors, !errors.isEmpty {
                     NSLog("%@", "Errors: \(errors)")
-                    completion(nil, cooldown, NSError())
+                    completion(nil, cooldown, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
                 guard let roomID = serverResponse.room_id else {
                     NSLog("%@", "Room ID is missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
                 guard let availableExits = serverResponse.exits else {
                     NSLog("%@", "Exits are missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -278,7 +278,7 @@ class Map {
                 }
                 
                 guard let data = data else {
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -297,7 +297,7 @@ class Map {
                 
                 guard let cooldown = serverResponse.cooldown else {
                     NSLog("%@", "Cooldown is missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -307,19 +307,19 @@ class Map {
                 
                 if let errors = serverResponse.errors, !errors.isEmpty {
                     NSLog("%@", "Errors: \(errors)")
-                    completion(nil, cooldown, NSError())
+                    completion(nil, cooldown, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
                 guard let roomID = serverResponse.room_id else {
                     NSLog("%@", "Room ID is missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
                 guard let availableExits = serverResponse.exits else {
                     NSLog("%@", "Exits are missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -469,7 +469,7 @@ class Map {
                 }
                 
                 guard let data = data else {
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -488,7 +488,7 @@ class Map {
                 
                 guard let cooldown = serverResponse.cooldown else {
                     NSLog("%@", "Cooldown is missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -498,19 +498,19 @@ class Map {
                 
                 if let errors = serverResponse.errors, !errors.isEmpty {
                     NSLog("%@", "Errors: \(errors)")
-                    completion(nil, cooldown, NSError())
+                    completion(nil, cooldown, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
                 guard let roomID = serverResponse.room_id else {
                     NSLog("%@", "Room ID is missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
                 guard let availableExits = serverResponse.exits else {
                     NSLog("%@", "Exits are missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -597,7 +597,7 @@ class Map {
                 }
                 
                 guard let data = data else {
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -616,7 +616,7 @@ class Map {
                 
                 guard let cooldown = serverResponse.cooldown else {
                     NSLog("%@", "Cooldown is missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -626,19 +626,19 @@ class Map {
                 
                 if let errors = serverResponse.errors, !errors.isEmpty {
                     NSLog("%@", "Errors: \(errors)")
-                    completion(nil, cooldown, NSError())
+                    completion(nil, cooldown, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
                 guard let roomID = serverResponse.room_id else {
                     NSLog("%@", "Room ID is missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
                 guard let availableExits = serverResponse.exits else {
                     NSLog("%@", "Exits are missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -729,7 +729,7 @@ class Map {
                 }
                 
                 guard let data = data else {
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -748,7 +748,7 @@ class Map {
                 
                 guard let cooldown = serverResponse.cooldown else {
                     NSLog("%@", "Cooldown is missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
@@ -758,19 +758,19 @@ class Map {
                 
                 if let errors = serverResponse.errors, !errors.isEmpty {
                     NSLog("%@", "Errors: \(errors)")
-                    completion(nil, cooldown, NSError())
+                    completion(nil, cooldown, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
                 guard let roomID = serverResponse.room_id else {
                     NSLog("%@", "Room ID is missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
                 guard let availableExits = serverResponse.exits else {
                     NSLog("%@", "Exits are missing!")
-                    completion(nil, nil, NSError())
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
                     return
                 }
                 
