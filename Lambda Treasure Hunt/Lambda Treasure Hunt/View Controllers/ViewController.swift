@@ -11,13 +11,13 @@ import UIKit
 class ViewController: UIViewController {
     
     enum AutoPilotMode {
-        case AutoDiscovery
-        case GoToTarget(roomID: Int)
-        case TreasureHunt
-        case Disable    // Manual control
+        case autoDiscovery
+        case goToTarget(roomID: Int)
+        case treasureHunt
+        case disabled    // Manual control
     }
     
-    var currentAutoPilotMode: AutoPilotMode = .Disable
+    var currentAutoPilotMode: AutoPilotMode = .disabled
     
     var map = Map()
     var cooldownDate: Date?
@@ -84,8 +84,6 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Autopilot mode test
-        currentAutoPilotMode = .TreasureHunt
         
         // Setting up room views
         roomViewContainer = UIView(frame: CGRect(x: 0.0, y: 0.0, width: 120.0 * 60.0, height: 120.0 * 60.0))
@@ -125,10 +123,12 @@ class ViewController: UIViewController {
         scrollView.addSubview(playerImageView)
         updatePlayerPosition()
         
+        // If there was cooldown left over, go ahead and wait for it to finish
         if let cooldownDate = UserDefaults.standard.object(forKey: "CooldownDate") as? Date {
             updateCooldown(cooldown: cooldownDate.timeIntervalSinceNow)
 
             Timer.scheduledTimer(withTimeInterval: max(cooldownDate.timeIntervalSinceNow, 0.0), repeats: false) { (_) in
+                // Then, load the map status, aka which room we are in
                 self.map.status { (room, cooldown, error) in
                     guard let cooldown = cooldown else {
                         NSLog("%@", "The cooldown is not available!")
@@ -137,6 +137,7 @@ class ViewController: UIViewController {
                     
                     self.updateCooldown(cooldown: cooldown)
                     Timer.scheduledTimer(withTimeInterval: cooldown, repeats: false, block: { (_) in
+                        // Wait for the cooldown, then load the player stats
                         self.map.playerStatus(completion: { (player, cooldown, error) in
                             guard let cooldown = cooldown else {
                                 NSLog("%@", "The cooldown is not available!")
@@ -148,6 +149,9 @@ class ViewController: UIViewController {
                             self.updatePlayerStats()
                             // Uncomment to find path to discover all rooms
                             self.perform(#selector(self.startAutoTraversal), with: nil, afterDelay: cooldown)
+                            
+                            // Autopilot mode test. This will start the treasure hunt process
+                            self.currentAutoPilotMode = .treasureHunt
                         })
                     })
                 }
@@ -378,6 +382,8 @@ class ViewController: UIViewController {
     var traversalGraph: [Int : Room] = [:]
     var backtrackingStack: [Direction] = []
     var finishedBuildingTraversalPath: Bool = false
+    var failedToCollectTreasure = false
+    var baselineCooldown: TimeInterval?
     
     @objc func startAutoTraversal() {
         traversalPath = []
@@ -385,6 +391,10 @@ class ViewController: UIViewController {
         backtrackingStack = []
         
         // Note that for path traversal, we are mostly ignoring the graph that the map object has, since that is mostly used for determining the "wise" path and other functions. This algorithm is specifically for finding the path that links all rooms, so having a graph without known exits will be useful to determine which rooms have not yet been explored.
+        
+        // Reset any treasure hunting state
+        failedToCollectTreasure = false
+        baselineCooldown = nil
         
         // Build up the first room
         guard let startingRoom = map.currentRoom else {
@@ -417,45 +427,132 @@ class ViewController: UIViewController {
     @objc func autoTraversal() {    // Use for auto discovery and treasure hunt
         
         // Check if we're treasure hunting
-//        if case currentAutoPilotMode = AutoPilotMode.TreasureHunt {
-//            // if there is treasure in current room, take it and return
-//            if map.currentRoom?.items > 0 {
-//                // takeTreasure()
-//            }
-//
-//            // call take method, wait for cooldown
-//            // call autoTraversal, if there is still treasure it will take it again, if none, it will move on to next room
-//        }
-        
-        
-        
-        if let currentRoom = map.currentRoom, let items = currentRoom.items, !items.isEmpty, let inventory = map.player.inventory, inventory.count < 10 {
+        if case .treasureHunt = currentAutoPilotMode, let shopRoom = map.shopRoom {
+            guard let currentRoom = map.currentRoom, let encumbrance = map.player.encumbrance, let strength = map.player.strength else { return }
             
-            map.takeTreasure(item: items[0]) { (room, cooldown, error) in
-                if let error = error {
-                    NSLog("%@", "Error taking item! \(error)")
+            if encumbrance < (strength*2 - 1) && !failedToCollectTreasure, let items = currentRoom.items, !items.isEmpty { // we want to collect any treasures we found so far, as long as we didn't fail to collect any yet
+                
+                map.takeTreasure(item: items[0]) { (room, cooldown, error) in
+                    if let error = error {
+                        NSLog("%@", "Error taking item! \(error)")
+                        
+                        // Make sure we don't collect treasure anymore
+                        self.failedToCollectTreasure = true
+                        
+                        let cooldown = cooldown ?? 30
+                        
+                        self.updateCooldown(cooldown: cooldown)
+                        self.updatePlayerPosition(cooldown: cooldown)
+                        self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
+                        
+                        return
+                    }
                     
-                    let cooldown = cooldown ?? 30
+                    guard let cooldown = cooldown else {
+                        NSLog("%@", "The cooldown is missing! Something is wrong...")
+                        return
+                    }
                     
                     self.updateCooldown(cooldown: cooldown)
                     self.updatePlayerPosition(cooldown: cooldown)
-                    self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
-                    
-                    return
+                    self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
                 }
                 
-                guard let cooldown = cooldown else {
-                    NSLog("%@", "The cooldown is missing! Something is wrong...")
-                    return
-                }
-                
-                self.updateCooldown(cooldown: cooldown)
-                self.updatePlayerPosition(cooldown: cooldown)
-                self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
+                return
             }
             
-            return
+            if currentRoom.roomID == shopRoom.roomID, let inventory = map.player.inventory { // in the shop, so sell as much "treasure" as we can
+                
+                // Check if we have at least one treasure to sell
+                if let itemToSell = inventory.first(where: { $0.contains("treasure") }) {
+                    map.sell(item: itemToSell) { (_, cooldown, error) in
+                        let cooldown = cooldown ?? 30
+                        
+                        if let _ = error {
+                            // If there was an error selling (maybe the item we were trying to sell didn't exist!), then reload the inventory
+                            Timer.scheduledTimer(withTimeInterval: cooldown, repeats: false, block: { (_) in
+                                self.map.playerStatus(completion: { (_, cooldown, error) in
+                                    let cooldown = cooldown ?? 30
+                                    
+                                    self.updateCooldown(cooldown: cooldown)
+                                    self.updatePlayerPosition(cooldown: cooldown)
+                                    self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
+                                })
+                            })
+                        }
+                        
+                        self.updateCooldown(cooldown: cooldown)
+                        self.updatePlayerPosition(cooldown: cooldown)
+                        self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
+                        
+                        // We don't want to update the status here because it would be wasted doing it for every sale. Instead, we only do it once at the very end
+                    }
+                    
+                    return
+                } else if encumbrance >= strength {
+                    // If we didn't have any more treasure, check if our encumbrance wasn't updated yet. If it hasn't been, go ahead and reset the player stats back to what the server says they are, and restart the whole process. Since the encumbrance is only updated when the stats are loaded, which only happens twice (once when the cooldown suddenly doubles, and once right here after we detect everything has been sold), we know that it is still unchanged at this point.
+                    // We know that the encumbrance at this step is still the status of before we sold anything, and we also know selling will lower the encumbrance, so after selling everything, we load the stats, which should reset the state for us.
+                    map.playerStatus(completion: { (_, cooldown, error) in
+                        let cooldown = cooldown ?? 30
+                        
+                        self.updateCooldown(cooldown: cooldown)
+                        self.updatePlayerPosition(cooldown: cooldown)
+                        self.updatePlayerStats()
+                        self.perform(#selector(self.startAutoTraversal), with: nil, afterDelay: cooldown)
+                    })
+                }
+            }
+            
+            if encumbrance >= strength { // we want to return to the shop
+                
+                guard var path = map.path(from: currentRoom.roomID, to: shopRoom.roomID), path.count > 1 else { return }
+                
+                let nextRoomID = path[1] // the second item in the path is the next room we want to visit
+                
+                var directionToTake: Direction!
+                
+                for (direction, exitRoomID) in currentRoom.exits {
+                    if nextRoomID == exitRoomID {
+                        directionToTake = direction
+                    }
+                }
+                
+                map.move(direction: directionToTake) { (newRoom, cooldown, error) in
+                    if let error = error {
+                        NSLog("%@", "Error backtracking! \(error)")
+                        
+                        let cooldown = cooldown ?? 30
+                        
+                        self.updateCooldown(cooldown: cooldown)
+                        self.updatePlayerPosition(cooldown: cooldown)
+                        self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
+                        
+                        return
+                    }
+                    
+                    guard let cooldown = cooldown else {
+                        NSLog("%@", "The cooldown is missing! Something is wrong...")
+                        return
+                    }
+                    
+                    NSLog("%@", "Walked \(directionToTake!) towards shop to room \(newRoom!.roomID)")
+                    
+                    // If successfull, log the backtrack and continue looping until after the cooldown
+                    self.traversalPath.append(directionToTake)
+                    
+                    self.updateCooldown(cooldown: cooldown)
+                    self.updatePlayerPosition(cooldown: cooldown)
+                    self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
+                }
+                
+                return
+            }
+
+            // call take method, wait for cooldown
+            // call autoTraversal, if there is still treasure it will take it again, if none, it will move on to next room
         }
+        
+        
         
         
         
@@ -465,6 +562,10 @@ class ViewController: UIViewController {
             // Print the traversal path
             let pythonFriendlyTraversalPath = "[\(traversalPath.map { "'\($0.rawValue)'" }.joined(separator: ", "))]"
             NSLog("%@", "The traversal path is:\n\(pythonFriendlyTraversalPath)")
+            
+            if case .treasureHunt = currentAutoPilotMode { // If we somehow discovered every room, but didn't sell in  between, just go ands try again
+                startAutoTraversal()
+            }
             
             return
         }
@@ -543,6 +644,40 @@ class ViewController: UIViewController {
                 
                 self.updateCooldown(cooldown: cooldown)
                 self.updatePlayerPosition(cooldown: cooldown)
+                
+                if case .treasureHunt = self.currentAutoPilotMode {
+                    if self.baselineCooldown == nil { // we haven't recorded the normal cooldown yet,. so save it
+                        self.baselineCooldown = cooldown
+                    } else if cooldown > self.baselineCooldown! + 0.01 { // if the cooldown is suddenly larger, reload the player stats so we can go ahead and change routes back to the shop (shop-searching code happens when the encumbrance is larger than half the strength, hense loading the stats)
+                        
+                        Timer.scheduledTimer(withTimeInterval: cooldown, repeats: false, block: { (_) in
+                            self.map.playerStatus(completion: { (_, cooldown, error) in
+                                if let error = error {
+                                    let cooldown = cooldown ?? 30
+                                    
+                                    self.updateCooldown(cooldown: cooldown)
+                                    self.updatePlayerPosition(cooldown: cooldown)
+                                    self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
+                                    
+                                    return
+                                }
+                                
+                                guard let cooldown = cooldown else {
+                                    NSLog("%@", "The cooldown is missing! Something is wrong...")
+                                    return
+                                }
+                                
+                                self.updateCooldown(cooldown: cooldown)
+                                self.updatePlayerStats()
+                                
+                                self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
+                            })
+                        })
+                        
+                        return
+                    }
+                }
+                
                 self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
             }
             
@@ -584,6 +719,40 @@ class ViewController: UIViewController {
                 
                 self.updateCooldown(cooldown: cooldown)
                 self.updatePlayerPosition(cooldown: cooldown)
+                
+                if case .treasureHunt = self.currentAutoPilotMode {
+                    if self.baselineCooldown == nil { // we haven't recorded the normal cooldown yet,. so save it
+                        self.baselineCooldown = cooldown
+                    } else if cooldown > self.baselineCooldown! + 0.01 { // if the cooldown is suddenly larger, reload the player stats so we can go ahead and change routes back to the shop (shop-searching code happens when the encumbrance is larger than half the strength, hense loading the stats)
+                        
+                        Timer.scheduledTimer(withTimeInterval: cooldown, repeats: false, block: { (_) in
+                            self.map.playerStatus(completion: { (_, cooldown, error) in
+                                if let error = error {
+                                    let cooldown = cooldown ?? 30
+                                    
+                                    self.updateCooldown(cooldown: cooldown)
+                                    self.updatePlayerPosition(cooldown: cooldown)
+                                    self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
+                                    
+                                    return
+                                }
+                                
+                                guard let cooldown = cooldown else {
+                                    NSLog("%@", "The cooldown is missing! Something is wrong...")
+                                    return
+                                }
+                                
+                                self.updateCooldown(cooldown: cooldown)
+                                self.updatePlayerStats()
+                                
+                                self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
+                            })
+                        })
+                        
+                        return
+                    }
+                }
+                
                 self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
             }
         }

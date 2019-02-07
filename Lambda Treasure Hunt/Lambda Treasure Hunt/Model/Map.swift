@@ -13,6 +13,8 @@ class Map {
     var currentRoom: Room?
     var player = Player()
     
+    var shopRoom: Room?
+    
     init() {
         // Loading the map file
         let fileURL = self.saveFileURL
@@ -30,6 +32,10 @@ class Map {
                 
                 for treasure in room.items ?? [] {
                     availableTreasures.insert(treasure)
+                }
+                
+                if room.title == "Shop" { // Save the shop room in a variable so we can access it easily
+                    shopRoom = room
                 }
             }
             NSLog("%@", "Available treasures: \(availableTreasures)")
@@ -312,6 +318,10 @@ class Map {
                 room.players = serverResponse.player
                 room.items = serverResponse.items
                 room.messages = serverResponse.messages
+                
+                if room.title == "Shop" { // Save the shop room in a variable so we can access it easily
+                    self.shopRoom = room
+                }
                 
                 let oldRoom = self.currentRoom
                 self.currentRoom = room     // curernt room is now new room
