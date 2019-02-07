@@ -99,6 +99,9 @@ class ViewController: UIViewController {
         }
         
         itemsTextView.text = "Items in Room:\n\((currentRoom.items ?? []).map({ "• \($0.capitalized)" }).joined(separator: "\n"))"
+        
+        self.updatePlayerStats()
+        self.updateMessage()
     }
     
     func updatePlayerStats() {
@@ -107,6 +110,12 @@ class ViewController: UIViewController {
         statsLabel.text = "\(player.name ?? "")     🧺: \(player.encumbrance ?? 0)     💪🏻: \(player.strength ?? 0)     🏃🏻‍♀️: \(player.speed ?? 0)     💰: \(player.gold ?? 0)"
         
         inventoryTextView.text = "Inventory:\n\((player.inventory ?? []).map({ "• \($0.capitalized)" }).joined(separator: "\n"))"
+    }
+    
+    func updateMessage() {
+        guard let message = map.currentMessages, let error = map.currentErrors else { return }
+        
+        messagesTextView.text = "\((message + error).joined(separator: "\n"))"
     }
 
     override func viewDidLoad() {
@@ -175,9 +184,6 @@ class ViewController: UIViewController {
                             
                             self.updateCooldown(cooldown: cooldown)
                             self.updatePlayerPosition()
-                            self.updatePlayerStats()
-                            // Uncomment to find path to discover all rooms
-                            self.perform(#selector(self.startAutoTraversal), with: nil, afterDelay: cooldown)
                             
                             // Autopilot mode test. This will start the treasure hunt process
                             self.currentAutoPilotMode = .treasureHunt
@@ -188,7 +194,7 @@ class ViewController: UIViewController {
         }
         
         // Call breadth first search to get path to target room so we can change our name
-//        NSLog("%@", "\(map.path(from: 386, to: 0))")
+//        NSLog("%@", "\(map.path(from: 23, to: 22))")
         
         
         // map, call move, it will save the moves in a file
@@ -204,7 +210,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var cooldownLabel: UILabel!
     @IBOutlet weak var statsLabel: UILabel!
     @IBOutlet weak var scrollView: UIScrollView!
-    @IBOutlet weak var messagesLabel: UILabel!
+    @IBOutlet weak var messagesTextView: UITextView!
     @IBOutlet weak var inventoryTextView: UITextView!
     @IBOutlet weak var itemsTextView: UITextView!
     
@@ -804,7 +810,7 @@ class ViewController: UIViewController {
             
             map.move(direction: backtrackDirection) { (newRoom, cooldown, error) in
                 if let error = error {
-                    NSLog("%@", "Error backtracking! \(error)")
+                    NSLog("Error backtracking! \(error)")
                     
                     let cooldown = cooldown ?? 30
                     
@@ -851,7 +857,7 @@ class ViewController: UIViewController {
                                 }
                                 
                                 self.updateCooldown(cooldown: cooldown)
-                                self.updatePlayerStats()
+                                self.updatePlayerPosition()
                                 
                                 self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
                             })

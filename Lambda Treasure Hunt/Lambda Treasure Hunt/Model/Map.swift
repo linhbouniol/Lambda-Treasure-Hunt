@@ -15,6 +15,9 @@ class Map {
     
     var shopRoom: Room?
     
+    var currentMessages: [String]?
+    var currentErrors: [String]?
+    
     init() {
         // Loading the map file
         let fileURL = self.saveFileURL
@@ -100,6 +103,9 @@ class Map {
                     return
                 }
                 
+                self.currentErrors = serverResponse.errors
+                self.currentMessages = serverResponse.messages
+                
                 if let errors = serverResponse.errors, !errors.isEmpty {
                     NSLog("%@", "Errors: \(errors)")
                     completion(nil, cooldown, NSError())
@@ -159,6 +165,9 @@ class Map {
                     completion(nil, nil, NSError())
                     return
                 }
+                
+                self.currentErrors = serverResponse.errors
+                self.currentMessages = serverResponse.messages
                 
                 if let errors = serverResponse.errors, !errors.isEmpty {
                     NSLog("%@", "Errors: \(errors)")
@@ -277,6 +286,10 @@ class Map {
                     completion(nil, nil, NSError())
                     return
                 }
+                
+                // Put this in a local property so the view controller can reference it directly
+                self.currentErrors = serverResponse.errors
+                self.currentMessages = serverResponse.messages
                 
                 if let errors = serverResponse.errors, !errors.isEmpty {
                     NSLog("%@", "Errors: \(errors)")
@@ -450,6 +463,10 @@ class Map {
                     return
                 }
                 
+                // Put this in a local property so the view controller can reference it directly
+                self.currentErrors = serverResponse.errors
+                self.currentMessages = serverResponse.messages
+                
                 if let errors = serverResponse.errors, !errors.isEmpty {
                     NSLog("%@", "Errors: \(errors)")
                     completion(nil, cooldown, NSError())
@@ -559,6 +576,10 @@ class Map {
                     completion(nil, nil, NSError())
                     return
                 }
+                
+                // Put this in a local property so the view controller can reference it directly
+                self.currentErrors = serverResponse.errors
+                self.currentMessages = serverResponse.messages
                 
                 if let errors = serverResponse.errors, !errors.isEmpty {
                     NSLog("%@", "Errors: \(errors)")
@@ -673,6 +694,10 @@ class Map {
                     completion(nil, nil, NSError())
                     return
                 }
+                
+                // Put this in a local property so the view controller can reference it directly
+                self.currentErrors = serverResponse.errors
+                self.currentMessages = serverResponse.messages
                 
                 if let errors = serverResponse.errors, !errors.isEmpty {
                     NSLog("%@", "Errors: \(errors)")

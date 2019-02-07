@@ -8,7 +8,7 @@
 
 import UIKit
 
-class RoomView: UIView {
+class RoomView: UIControl {
     
     var room: Room? {
         didSet {
