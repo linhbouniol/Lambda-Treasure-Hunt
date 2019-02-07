@@ -54,6 +54,10 @@ class RoomView: UIControl {
                 self.tintColor = UIColor(hue: 0.0, saturation: 1.0, brightness: 0.9, alpha: 1.0)
             case "A misty room":
                 self.tintColor = UIColor(hue: CGFloat.random(in: 0.0...1.0), saturation: 0.6, brightness: 0.1, alpha: 0.5)
+            case "Mt. Holloway":
+                self.tintColor = UIColor(hue: 0.1, saturation: 1.0, brightness: 0.7, alpha: 1.0)
+            case "The Peak of Mt. Holloway":
+                self.tintColor = UIColor(hue: 0.55, saturation: 1.0, brightness: 1.0, alpha: 1.0)
             default:
                 self.tintColor = UIColor(hue: CGFloat.random(in: 0.0...1.0), saturation: 0.6, brightness: 0.9, alpha: 1.0)
             }
