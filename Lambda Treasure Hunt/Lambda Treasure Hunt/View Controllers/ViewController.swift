@@ -531,43 +531,83 @@ class ViewController: UIViewController {
                 return
             }
             
-            let nextRoomID = path[1] // the second item in the path is the next room we want to visit
+            var directionToTake: Direction! // the primary direction we will go in
+            var singleDirectionPath: [Int] = [] // the rooms that we will go through
             
-            var directionToTake: Direction!
-            
-            for (direction, exitRoomID) in currentRoom.exits {
-                if nextRoomID == exitRoomID {
-                    directionToTake = direction
+            roomLoop: for nextRoomID in path[1...] { // loop through all the items in the path, starting with the next room
+                directionLoop: for (direction, exitRoomID) in currentRoom.exits { // check to see direction the next room is in
+                    if nextRoomID == exitRoomID {
+                        if directionToTake == nil || directionToTake == direction { // if this is the first room we are checking (directionToTake is nil) or if the directions match, add the next room to the list of rooms in a single line
+                            directionToTake = direction
+                            singleDirectionPath.append(nextRoomID)
+                        } else { // the direction is changing, so stop here and don't check any more rooms
+                            break roomLoop
+                        }
+                        break directionLoop // We found the direction we were interested in, stop checking directions
+                    }
                 }
+                currentRoom = map.rooms[nextRoomID]! // Set the current room to whichever one we just checked so we can check the following room
             }
             
-            map.move(direction: directionToTake) { (newRoom, cooldown, error) in
-                if let error = error {
-                    NSLog("%@", "Error backtracking! \(error)")
+            if singleDirectionPath.count > 1 { // we can dash, since there is more than one room in the direction
+                map.dash(direction: directionToTake, path: singleDirectionPath) { (newRoom, cooldown, error) in
+                    if let error = error {
+                        NSLog("%@", "Error backtracking! \(error)")
+                        
+                        let cooldown = cooldown ?? 30
+                        
+                        self.updateCooldown(cooldown: cooldown)
+                        self.updatePlayerPosition(cooldown: cooldown)
+                        self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
+                        
+                        return
+                    }
                     
-                    let cooldown = cooldown ?? 30
+                    guard let cooldown = cooldown else {
+                        NSLog("%@", "The cooldown is missing! Something is wrong...")
+                        return
+                    }
+                    
+                    NSLog("%@", "Walked \(directionToTake!) towards \(roomID) to room \(newRoom!.roomID)")
+                    
+                    // If successfull, log the backtrack and continue looping until after the cooldown
+                    self.traversalPath.append(directionToTake)
                     
                     self.updateCooldown(cooldown: cooldown)
                     self.updatePlayerPosition(cooldown: cooldown)
-                    self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
+                    self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
+                }
+            } else { // better to walk/fly instead
+                map.move(direction: directionToTake) { (newRoom, cooldown, error) in
+                    if let error = error {
+                        NSLog("%@", "Error backtracking! \(error)")
+                        
+                        let cooldown = cooldown ?? 30
+                        
+                        self.updateCooldown(cooldown: cooldown)
+                        self.updatePlayerPosition(cooldown: cooldown)
+                        self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
+                        
+                        return
+                    }
                     
-                    return
+                    guard let cooldown = cooldown else {
+                        NSLog("%@", "The cooldown is missing! Something is wrong...")
+                        return
+                    }
+                    
+                    NSLog("%@", "Walked \(directionToTake!) towards \(roomID) to room \(newRoom!.roomID)")
+                    
+                    // If successfull, log the backtrack and continue looping until after the cooldown
+                    self.traversalPath.append(directionToTake)
+                    
+                    self.updateCooldown(cooldown: cooldown)
+                    self.updatePlayerPosition(cooldown: cooldown)
+                    self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
                 }
-                
-                guard let cooldown = cooldown else {
-                    NSLog("%@", "The cooldown is missing! Something is wrong...")
-                    return
-                }
-                
-                NSLog("%@", "Walked \(directionToTake!) towards \(roomID) to room \(newRoom!.roomID)")
-                
-                // If successfull, log the backtrack and continue looping until after the cooldown
-                self.traversalPath.append(directionToTake)
-                
-                self.updateCooldown(cooldown: cooldown)
-                self.updatePlayerPosition(cooldown: cooldown)
-                self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
             }
+            
+            
             
             return
         }
@@ -652,14 +692,24 @@ class ViewController: UIViewController {
                 
                 guard var path = map.path(from: currentRoom.roomID, to: shopRoom.roomID), path.count > 1 else { return }
                 
-                let nextRoomID = path[1] // the second item in the path is the next room we want to visit
+                var directionToTake: Direction! // the primary direction we will go in
+                var singleDirectionPath: [Int] = [] // the rooms that we will go through
                 
-                var directionToTake: Direction!
+                var currentRoom = currentRoom
                 
-                for (direction, exitRoomID) in currentRoom.exits {
-                    if nextRoomID == exitRoomID {
-                        directionToTake = direction
+                roomLoop: for nextRoomID in path[1...] { // loop through all the items in the path, starting with the next room
+                    directionLoop: for (direction, exitRoomID) in currentRoom.exits { // check to see direction the next room is in
+                        if nextRoomID == exitRoomID {
+                            if directionToTake == nil || directionToTake == direction { // if this is the first room we are checking (directionToTake is nil) or if the directions match, add the next room to the list of rooms in a single line
+                                directionToTake = direction
+                                singleDirectionPath.append(nextRoomID)
+                            } else { // the direction is changing, so stop here and don't check any more rooms
+                                break roomLoop
+                            }
+                            break directionLoop // We found the direction we were interested in, stop checking directions
+                        }
                     }
+                    currentRoom = map.rooms[nextRoomID]! // Set the current room to whichever one we just checked so we can check the following room
                 }
                 
                 if singleDirectionPath.count > 1 { // we can dash, since there is more than one room in the direction
