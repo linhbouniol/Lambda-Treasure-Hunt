@@ -21,13 +21,19 @@ class ViewController: UIViewController {
         didSet {
             // Unless the old value was in manual mode (aka diabled), don't bother calling start auto traversal, since it is already auto-traversing via one of the auto-pilot modes
             // If we were in disabled mode, and we change to a auto mode, call start traversal. If we were in an auto mode, and change it to another auto-mode, autoTraversal() will pick up the new mode. If we change to disable mode, autoTraverssal() will stop when the cooldown is reached.
-            guard case .disabled = oldValue else { return }
             
+            // Setting up the x mark to show or hide
             if case let .goToTarget(roomID) = currentAutoPilotMode { // show (.isHidden = false) and position x view
-                
+                if let room = map.rooms[roomID], let coordinates = room.coordinates {
+                    xImageView.frame = CGRect(x: CGFloat(coordinates.x) * 60.0 + (60.0 - 32.0)/2, y: CGFloat(120-coordinates.y) * 60.0 + (60.0 - 32.0)/2, width: 32.0, height: 32.0)
+                    xImageView.isHidden = false
+                }
             } else { // hide (.isHidden = true) the x view
-                
+                // No target room if we're doing any other autopilot mode
+                xImageView.isHidden = true
             }
+            
+            guard case .disabled = oldValue else { return }
             
             switch currentAutoPilotMode {
             case .autoDiscovery, .treasureHunt, .goToTarget:
@@ -110,7 +116,7 @@ class ViewController: UIViewController {
             
             scrollView.scrollRectToVisible(playerFrame.insetBy(dx: -(scrollView.frame.width - 32)/2.0, dy: -(scrollView.frame.height - 32)/2.0), animated: true)
         } else {
-            UIView.animate(withDuration: cooldown * 0.9, delay: 0.0, options: .curveEaseOut, animations: {
+            UIView.animate(withDuration: cooldown, delay: 0.0, options: .curveEaseOut, animations: {
                 self.playerImageView.frame = playerFrame
             }, completion: nil)
             
@@ -161,9 +167,14 @@ class ViewController: UIViewController {
             roomViews[room.roomID] = roomView
         }
         
+        // Create x mark view
+        xImageView = UIImageView(frame: CGRect(x: 0.0, y: 0.0, width: 32.0, height: 32.0))
+        xImageView.image = UIImage(named: "XMark")
+        scrollView.addSubview(xImageView)
+        
         // Animate player's image
         playerImageView = UIImageView(frame: CGRect(x: 0.0, y: 0.0, width: 32.0, height: 32.0))
-        playerImageView.image = UIImage(named: "PlayerAnimoji")
+        playerImageView.image = UIImage(named: "PlayerAnimojiBlack")
         scrollView.addSubview(playerImageView)
         updatePlayerPosition()
         
@@ -223,6 +234,7 @@ class ViewController: UIViewController {
     var roomViewContainer: UIView!
     var roomViews: [Int : RoomView] = [:]
     var playerImageView: UIImageView!
+    var xImageView: UIImageView!
     
     @IBAction func goNorth(_ sender: Any) {
         currentAutoPilotMode = .disabled
@@ -633,32 +645,62 @@ class ViewController: UIViewController {
                     }
                 }
                 
-                map.move(direction: directionToTake) { (newRoom, cooldown, error) in
-                    if let error = error {
-                        NSLog("%@", "Error backtracking!")
+                if singleDirectionPath.count > 1 { // we can dash, since there is more than one room in the direction
+                    map.dash(direction: directionToTake, path: singleDirectionPath) { (newRoom, cooldown, error) in
+                        if let error = error {
+                            NSLog("%@", "Error backtracking!")
+                            
+                            let cooldown = cooldown ?? 30
+                            
+                            self.updateCooldown(cooldown: cooldown)
+                            self.updatePlayerPosition(cooldown: cooldown)
+                            self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
+                            
+                            return
+                        }
                         
-                        let cooldown = cooldown ?? 30
+                        guard let cooldown = cooldown else {
+                            NSLog("%@", "The cooldown is missing! Something is wrong...")
+                            return
+                        }
+                        
+                        NSLog("%@", "Walked \(directionToTake!) towards shop to room \(newRoom!.roomID)")
+                        
+                        // If successfull, log the backtrack and continue looping until after the cooldown
+                        self.traversalPath.append(directionToTake)
                         
                         self.updateCooldown(cooldown: cooldown)
                         self.updatePlayerPosition(cooldown: cooldown)
-                        self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
+                        self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
+                    }
+                } else {
+                    map.move(direction: directionToTake) { (newRoom, cooldown, error) in
+                        if let error = error {
+                            NSLog("%@", "Error backtracking!")
+                            
+                            let cooldown = cooldown ?? 30
+                            
+                            self.updateCooldown(cooldown: cooldown)
+                            self.updatePlayerPosition(cooldown: cooldown)
+                            self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown) // use self.perform when calling a recursive function so it doesn't fill the stack and cause an overflow
+                            
+                            return
+                        }
                         
-                        return
+                        guard let cooldown = cooldown else {
+                            NSLog("%@", "The cooldown is missing! Something is wrong...")
+                            return
+                        }
+                        
+                        NSLog("%@", "Walked \(directionToTake!) towards shop to room \(newRoom!.roomID)")
+                        
+                        // If successfull, log the backtrack and continue looping until after the cooldown
+                        self.traversalPath.append(directionToTake)
+                        
+                        self.updateCooldown(cooldown: cooldown)
+                        self.updatePlayerPosition(cooldown: cooldown)
+                        self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
                     }
-                    
-                    guard let cooldown = cooldown else {
-                        NSLog("%@", "The cooldown is missing! Something is wrong...")
-                        return
-                    }
-                    
-                    NSLog("%@", "Walked \(directionToTake!) towards shop to room \(newRoom!.roomID)")
-                    
-                    // If successfull, log the backtrack and continue looping until after the cooldown
-                    self.traversalPath.append(directionToTake)
-                    
-                    self.updateCooldown(cooldown: cooldown)
-                    self.updatePlayerPosition(cooldown: cooldown)
-                    self.perform(#selector(self.autoTraversal), with: nil, afterDelay: cooldown)
                 }
                 
                 return
@@ -667,11 +709,7 @@ class ViewController: UIViewController {
             // call take method, wait for cooldown
             // call autoTraversal, if there is still treasure it will take it again, if none, it will move on to next room
         }
-        
-        
-        
-        
-        
+       
         guard traversalGraph.count < 500 && !finishedBuildingTraversalPath else {
             // We traversed the whole graph at this point, so we are done!
             

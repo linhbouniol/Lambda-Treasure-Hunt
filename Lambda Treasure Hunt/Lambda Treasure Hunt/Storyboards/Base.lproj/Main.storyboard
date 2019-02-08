@@ -65,7 +65,7 @@
                                             </connections>
                                         </button>
                                         <button opaque="NO" contentMode="scaleToFill" ambiguous="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="lwY-7f-h5l">
-                                            <rect key="frame" x="192" y="94" width="100" height="36"/>
+                                            <rect key="frame" x="190" y="94" width="100" height="36"/>
                                             <color key="backgroundColor" red="1" green="0.0" blue="0.71583369009999998" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                             <constraints>
                                                 <constraint firstAttribute="width" constant="100" id="Uh5-wU-kio"/>
@@ -80,7 +80,7 @@
                                             </connections>
                                         </button>
                                         <button opaque="NO" contentMode="scaleToFill" ambiguous="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="dEc-Oa-kEa">
-                                            <rect key="frame" x="314" y="94" width="100" height="36"/>
+                                            <rect key="frame" x="310" y="94" width="100" height="36"/>
                                             <color key="backgroundColor" red="1" green="0.0" blue="0.71583369009999998" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                             <constraints>
                                                 <constraint firstAttribute="width" constant="100" id="gnB-L7-7zF"/>
@@ -95,22 +95,22 @@
                                             </connections>
                                         </button>
                                         <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" editable="NO" text="Items in Room:" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="Nwj-fi-uW2">
-                                            <rect key="frame" x="1059" y="8" width="147" height="138"/>
+                                            <rect key="frame" x="1068" y="8" width="147" height="138"/>
                                             <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMinY="YES"/>
                                             <color key="textColor" red="0.85620241119999996" green="0.001152913263" blue="0.61976497519999996" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                             <fontDescription key="fontDescription" type="system" weight="medium" pointSize="14"/>
                                             <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                                         </textView>
                                         <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" editable="NO" text="Inventory:" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="xbp-5u-MW1">
-                                            <rect key="frame" x="889" y="8" width="147" height="138"/>
+                                            <rect key="frame" x="918" y="8" width="147" height="138"/>
                                             <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMinY="YES"/>
                                             <color key="textColor" red="0.85620241116751272" green="0.001152913262822715" blue="0.61976497519165952" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                             <fontDescription key="fontDescription" type="system" weight="medium" pointSize="14"/>
                                             <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                                         </textView>
                                         <button opaque="NO" contentMode="scaleToFill" ambiguous="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="vWE-ef-QS2">
-                                            <rect key="frame" x="436" y="94" width="200" height="36"/>
-                                            <color key="backgroundColor" red="1" green="0.0" blue="0.71583369009999998" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                            <rect key="frame" x="430" y="94" width="200" height="36"/>
+                                            <color key="backgroundColor" red="1" green="0.0" blue="0.72549019607843135" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                             <constraints>
                                                 <constraint firstAttribute="height" constant="36" id="ZT0-Vj-qSp"/>
                                                 <constraint firstAttribute="width" constant="200" id="jn7-35-LxA"/>
@@ -124,7 +124,7 @@
                                             </connections>
                                         </button>
                                         <button opaque="NO" contentMode="scaleToFill" ambiguous="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="hsb-4M-GLT">
-                                            <rect key="frame" x="658" y="94" width="200" height="36"/>
+                                            <rect key="frame" x="650" y="94" width="200" height="36"/>
                                             <color key="backgroundColor" red="1" green="0.0" blue="0.71583369009999998" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                             <constraints>
                                                 <constraint firstAttribute="height" constant="36" id="Q9S-8K-EFP"/>
@@ -139,23 +139,34 @@
                                             </connections>
                                         </button>
                                         <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" editable="NO" text="Messages/Errors" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="Biv-Of-HuH">
-                                            <rect key="frame" x="21" y="8" width="837" height="78"/>
+                                            <rect key="frame" x="21" y="8" width="615" height="78"/>
                                             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
                                             <color key="textColor" red="0.85620241119999996" green="0.001152913263" blue="0.61976497519999996" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                             <fontDescription key="fontDescription" type="system" weight="medium" pointSize="16"/>
                                             <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                                         </textView>
+                                        <button opaque="NO" contentMode="scaleToFill" ambiguous="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="wDm-T4-Vld">
+                                            <rect key="frame" x="860" y="90" width="46" height="46"/>
+                                            <constraints>
+                                                <constraint firstAttribute="height" constant="46" id="hM0-27-sxJ"/>
+                                                <constraint firstAttribute="width" constant="46" id="iO9-T3-wXc"/>
+                                            </constraints>
+                                            <color key="tintColor" red="1" green="0.0" blue="0.71583369009999998" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                            <state key="normal" image="MagnifyGlass"/>
+                                        </button>
                                     </subviews>
                                     <constraints>
                                         <constraint firstAttribute="bottom" secondItem="hsb-4M-GLT" secondAttribute="bottom" constant="38" id="2r6-fK-QmJ"/>
                                         <constraint firstAttribute="bottom" secondItem="vWE-ef-QS2" secondAttribute="bottom" constant="38" id="6CV-Vw-oqZ"/>
-                                        <constraint firstItem="hsb-4M-GLT" firstAttribute="leading" secondItem="vWE-ef-QS2" secondAttribute="trailing" constant="22" id="H3b-V5-m2E"/>
-                                        <constraint firstItem="lwY-7f-h5l" firstAttribute="leading" secondItem="acb-Zr-RwY" secondAttribute="trailing" constant="22" id="HVr-Wg-kDk"/>
-                                        <constraint firstItem="dEc-Oa-kEa" firstAttribute="leading" secondItem="lwY-7f-h5l" secondAttribute="trailing" constant="22" id="IvL-K7-a0v"/>
-                                        <constraint firstItem="vWE-ef-QS2" firstAttribute="leading" secondItem="dEc-Oa-kEa" secondAttribute="trailing" constant="22" id="TCH-rS-X0P"/>
+                                        <constraint firstItem="hsb-4M-GLT" firstAttribute="leading" secondItem="vWE-ef-QS2" secondAttribute="trailing" constant="20" id="H3b-V5-m2E"/>
+                                        <constraint firstItem="lwY-7f-h5l" firstAttribute="leading" secondItem="acb-Zr-RwY" secondAttribute="trailing" constant="20" id="HVr-Wg-kDk"/>
+                                        <constraint firstItem="dEc-Oa-kEa" firstAttribute="leading" secondItem="lwY-7f-h5l" secondAttribute="trailing" constant="20" id="IvL-K7-a0v"/>
+                                        <constraint firstItem="vWE-ef-QS2" firstAttribute="leading" secondItem="dEc-Oa-kEa" secondAttribute="trailing" constant="20" id="TCH-rS-X0P"/>
                                         <constraint firstItem="acb-Zr-RwY" firstAttribute="leading" secondItem="yzF-8S-P0C" secondAttribute="leading" constant="70" id="Xyt-Ec-Pf1"/>
                                         <constraint firstAttribute="bottom" secondItem="dEc-Oa-kEa" secondAttribute="bottom" constant="38" id="dE0-xC-ZRH"/>
+                                        <constraint firstAttribute="bottom" secondItem="wDm-T4-Vld" secondAttribute="bottom" constant="32" id="jO5-ql-DNr"/>
                                         <constraint firstAttribute="bottom" secondItem="acb-Zr-RwY" secondAttribute="bottom" constant="38" id="lYL-N7-Fko"/>
+                                        <constraint firstItem="wDm-T4-Vld" firstAttribute="leading" secondItem="hsb-4M-GLT" secondAttribute="trailing" constant="10" id="oKz-nW-0h7"/>
                                         <constraint firstAttribute="bottom" secondItem="lwY-7f-h5l" secondAttribute="bottom" constant="38" id="uX3-Cv-u8L"/>
                                     </constraints>
                                 </view>
@@ -246,6 +257,7 @@
         </scene>
     </scenes>
     <resources>
+        <image name="MagnifyGlass" width="32" height="32"/>
         <image name="ManualEast" width="32" height="32"/>
         <image name="ManualNorth" width="32" height="32"/>
         <image name="ManualSouth" width="32" height="32"/>

@@ -17,6 +17,8 @@ class Room: CustomStringConvertible, Codable {
     var items: [String]?
     var messages: [String]?
     
+    var lastVisitedDate: Date?
+    
     init(roomID: Int, exits: [Direction : Int?]) {
         self.roomID = roomID
         self.exits = exits

@@ -53,7 +53,7 @@ class RoomView: UIControl {
             case "Name Changer":
                 self.tintColor = UIColor(hue: 0.0, saturation: 1.0, brightness: 0.9, alpha: 1.0)
             case "A misty room":
-                self.tintColor = UIColor(hue: CGFloat.random(in: 0.0...1.0), saturation: 0.6, brightness: 0.35, alpha: 0.5)
+                self.tintColor = UIColor(hue: CGFloat.random(in: 0.0...1.0), saturation: 0.6, brightness: 0.35, alpha: 1.0)
             case "Mt. Holloway":
                 self.tintColor = UIColor(hue: 0.1, saturation: 1.0, brightness: 0.9, alpha: 1.0)
             case "The Peak of Mt. Holloway":
@@ -61,12 +61,15 @@ class RoomView: UIControl {
             default:
                 self.tintColor = UIColor(hue: CGFloat.random(in: 0.0...1.0), saturation: 0.6, brightness: 0.9, alpha: 1.0)
             }
+            
+            updateRoomVibrancy()
         }
     }
     
     var backgroundImageView: UIImageView
     var roomIDLabel: UILabel
     var titleLabel: UILabel
+    var roomVisitTimer: Timer?
 
     override init(frame: CGRect) {
         backgroundImageView = UIImageView(frame: CGRect(x: 0.0, y: 0.0, width: frame.width, height: frame.height))
@@ -85,6 +88,28 @@ class RoomView: UIControl {
         addSubview(backgroundImageView)
         addSubview(roomIDLabel)
         addSubview(titleLabel)
+        
+        roomVisitTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true, block: { [weak self] (timer) in
+            guard let self = self else { return }
+            
+            self.updateRoomVibrancy()
+        })
+        
+        roomVisitTimer?.tolerance = 10
+    }
+    
+    deinit {
+        roomVisitTimer?.invalidate()
+    }
+    
+    func updateRoomVibrancy() {
+        let timeSinceVisited = -(room?.lastVisitedDate?.timeIntervalSinceNow ?? -100000)/300.0
+        
+        if room?.title == "A misty room" {
+            self.alpha = CGFloat(1.0/(timeSinceVisited+1.0/(9.0*0.1))+0.1)
+        } else {
+            self.alpha = CGFloat(1.0/(timeSinceVisited+1.0/(0.5))+0.5)
+        }
     }
     
     override func tintColorDidChange() {
@@ -97,7 +122,4 @@ class RoomView: UIControl {
     required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    
-
 }

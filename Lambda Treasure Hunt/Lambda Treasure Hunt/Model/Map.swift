@@ -215,6 +215,9 @@ class Map {
                     room.exits = updatedExits
                 }
                 
+                // Mark the room as having been visited just now
+                room.lastVisitedDate = Date()
+                
                 // Get values from serverResponse and save them to our properties
                 room.title = serverResponse.title
                 if let coordinates = serverResponse.coordinates {
@@ -351,6 +354,9 @@ class Map {
                     // Update the room with the available exits
                     room.exits = updatedExits
                 }
+                
+                // Mark the room as having been visited just now
+                room.lastVisitedDate = Date()
                 
                 // Get values from serverResponse and save them to our properties
                 room.title = serverResponse.title
