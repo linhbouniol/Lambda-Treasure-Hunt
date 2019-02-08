@@ -126,7 +126,7 @@ class ViewController: UIViewController {
     func updatePlayerStats() {
         let player = map.player
         
-        statsLabel.text = "\(player.name ?? "")     🧺: \(player.encumbrance ?? 0)     💪🏻: \(player.strength ?? 0)     🏃🏻‍♀️: \(player.speed ?? 0)     💰: \(player.gold ?? 0)"
+        statsLabel.text = "\(player.name ?? "")     🧺: \(player.encumbrance ?? 0)     💪🏼: \(player.strength ?? 0)     🏃🏻‍♀️: \(player.speed ?? 0)     💰: \(player.gold ?? 0)"
         
         inventoryTextView.text = "Inventory:\n\((player.inventory ?? []).map({ "• \($0.capitalized)" }).joined(separator: "\n"))"
     }
