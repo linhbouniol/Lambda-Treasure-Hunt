@@ -332,6 +332,20 @@ class ViewController: UIViewController {
         currentAutoPilotMode = .goToTarget(roomID: room.roomID)
     }
     
+    @IBAction func goToSpecifiedRoom(_ sender: Any) {
+        let alert = UIAlertController(title: "Enter a room number…", message: nil, preferredStyle: .alert)
+        alert.addTextField { (textField) in
+            textField.placeholder = "Room Number"
+        }
+        alert.addAction(UIAlertAction(title: "Go", style: .default, handler: { (action) in
+            guard let text = alert.textFields?.first?.text else { return }
+            guard let roomID = Int(text) else { return }
+            self.currentAutoPilotMode = .goToTarget(roomID: roomID)
+        }))
+        
+        self.present(alert, animated: true, completion: nil)
+    }
+    
     @IBAction func discoverAllRooms(_ sender: Any) {
         
         currentAutoPilotMode = .autoDiscovery
@@ -508,8 +522,11 @@ class ViewController: UIViewController {
         if case .disabled = currentAutoPilotMode { return }
         
         if case let .goToTarget(roomID) = currentAutoPilotMode {
-            guard let currentRoom = map.currentRoom else { return }
+            guard var currentRoom = map.currentRoom else { return }
+            
+            // Check if there are at least two rooms in the path, because there is only one room, that means we're already there, we're interested in the next room
             guard var path = map.path(from: currentRoom.roomID, to: roomID), path.count > 1 else {
+                // If the path doesn't have more than 1 room, that means the current room and the next room are the same, and we're at the destination, so we need to set the mode to be disable, which was call the didSet and remove the x mark.
                 currentAutoPilotMode = .disabled
                 return
             }

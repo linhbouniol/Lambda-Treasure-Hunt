@@ -243,7 +243,13 @@ class Map {
             NSLog("%@", "No current room yet. We may move in an unexpected direction!")
         }
         
-        let url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/fly/")!
+        let url: URL
+        
+        if let title = currentRoom?.title, title.lowercased().contains("cave") { // if we are in a cave, don't fly
+            url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/move/")!
+        } else {
+            url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/fly/")!
+        }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -387,6 +393,155 @@ class Map {
                 completion(room, cooldown, nil)
             }
         }.resume()
+    }
+    
+    func dash(direction: Direction, path: [Int], completion: @escaping (_ room: Room?, _ coolDown: TimeInterval?, _ error: Error?) -> Void) {
+        if currentRoom == nil {
+            NSLog("%@", "No current room yet. We may move in an unexpected direction!")
+        }
+        
+        let url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/dash/")!
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Token b1a0e8086d92bc85dda1a47d390b2e1bf32f74d4", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        do {
+            // Make a temporary struct to represent the move request. This will have two properties; one is a String and one is an Int.
+            // If both were the same type, we could've used a dictionary.
+            struct DashRequest: Codable {
+                var direction: Direction
+                var num_rooms: String
+                var next_room_ids: String
+            }
+            
+            // Make our temporary request
+            let requestStruct = DashRequest(direction: direction, num_rooms: String(path.count), next_room_ids: path.map( { "\($0)" }).joined(separator: ","))
+            // Encode the request
+            request.httpBody = try JSONEncoder().encode(requestStruct)
+        } catch {
+            NSLog("%@", "Unable to encode direction: \(error)")
+            completion(nil, nil, error)
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { (data, _, error) in
+            DispatchQueue.main.async {
+                
+                if let error = error {
+                    NSLog("%@", "Error saving todo on server: \(error)")
+                    completion(nil, nil, error)
+                    return
+                }
+                
+                guard let data = data else {
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
+                    return
+                }
+                
+                let serverResponse: ServerResponse
+                
+                do {
+                    serverResponse = try JSONDecoder().decode(ServerResponse.self, from: data)
+                } catch {
+                    NSLog("%@", "Error decoding received data: \(error)")
+                    completion(nil, nil, error)
+                    return
+                }
+                
+                // Check for the three things we're interested in: room, cooldown, error
+                // Doing this here because those things will changed and every time they're different so it's easier to deal with them here as we decode
+                
+                guard let cooldown = serverResponse.cooldown else {
+                    NSLog("%@", "Cooldown is missing!")
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
+                    return
+                }
+                
+                // Put this in a local property so the view controller can reference it directly
+                self.currentErrors = serverResponse.errors
+                self.currentMessages = serverResponse.messages
+                
+                if let errors = serverResponse.errors, !errors.isEmpty {
+                    NSLog("%@", "Errors: \(errors)")
+                    completion(nil, cooldown, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
+                    return
+                }
+                
+                guard let roomID = serverResponse.room_id else {
+                    NSLog("%@", "Room ID is missing!")
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
+                    return
+                }
+                
+                guard let availableExits = serverResponse.exits else {
+                    NSLog("%@", "Exits are missing!")
+                    completion(nil, nil, NSError(domain: "TreasureHuntErrorDomain", code: 0, userInfo: nil))
+                    return
+                }
+                
+                // Construct the room
+                // Check if there is already a room with this ID; if yes, we're updating it; if no, we're adding it
+                var room: Room! = self.rooms[roomID]
+                // ...When we found a new room/exit...
+                if room == nil {
+                    var exits: [Direction : Int?] = [:]
+                    for direction in availableExits {
+                        // Set up the dictionary, but we don't know which rooms each exit leads to yet
+                        exits[direction] = nil as Int?
+                    }
+                    // Create the room object with room ID and exits dictionary, but we are just remembering which exit directions there are, the room IDs for each exit is nil
+                    room = Room(roomID: roomID, exits: exits)
+                    self.rooms[roomID] = room
+                } else {    // If the room in the cache exists...when we go through the room/exit again and want to update chagnes...
+                    var updatedExits: [Direction : Int?] = [:]  // new exits dictionary
+                    for direction in availableExits {
+                        // While we're adding each available exit, check if we already know which room comes next
+                        if let existingExit = room.exits[direction] {
+                            // If we do, we use that room
+                            updatedExits[direction] = existingExit as Int?
+                        } else {
+                            // Otherwise, we set it to nil
+                            updatedExits[direction] = nil as Int?
+                        }
+                    }
+                    // Update the room with the available exits
+                    room.exits = updatedExits
+                }
+                
+                // Mark the room as having been visited just now
+                room.lastVisitedDate = Date()
+                
+                // Get values from serverResponse and save them to our properties
+                room.title = serverResponse.title
+                if let coordinates = serverResponse.coordinates {
+                    room.coordinates = Coordinates(string: coordinates)
+                }
+                room.players = serverResponse.player
+                room.items = serverResponse.items
+                room.messages = serverResponse.messages
+                
+                if room.title == "Shop" { // Save the shop room in a variable so we can access it easily
+                    self.shopRoom = room
+                }
+                
+                let oldRoom = self.currentRoom
+                self.currentRoom = room     // curernt room is now new room
+                
+                // If there is no errors, go ahead and save the movement into the map
+                // First, assign the new room as an exit of the old room
+//                oldRoom?.exits[direction] = roomID
+//                // Then, assign the old room as the entrance to the new room
+//                self.currentRoom?.exits[direction.opposite] = oldRoom?.roomID as Int?
+                
+                self.save()
+                
+                NSLog("%@", "Moved \(direction) to \(room!)") // room will internally call description() to log the room info
+                
+                completion(room, cooldown, nil)
+            }
+            }.resume()
     }
     
     func save() {
