@@ -243,11 +243,21 @@ class Map {
             NSLog("%@", "No current room yet. We may move in an unexpected direction!")
         }
         
+        // Can only dash if we know the next room and if we're in the caves
+        if let currentRoom = currentRoom, let nextRoomIDOptional = currentRoom.exits[direction], let nextRoomID = nextRoomIDOptional, let nextRoom = rooms[nextRoomID], let title = nextRoom.title, title.lowercased().contains("cave") {
+            // if we are moving to a cave, dash instead!
+            dash(direction: direction, path: [nextRoomID], completion: completion)
+            return
+        }
+        
         let url: URL
         
+        // If there is no next room, and we're in the caves, we must walk
         if let title = currentRoom?.title, title.lowercased().contains("cave") { // if we are in a cave, don't fly
             url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/move/")!
-        } else {
+        } else if let encumbrance = player.encumbrance, let strength = player.strength, encumbrance >= strength { // if we have too much stuff, don't fly
+            url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/move/")!
+        } else { // seems like it's safe to fly!
             url = URL(string: "https://lambda-treasure-hunt.herokuapp.com/api/adv/fly/")!
         }
         
